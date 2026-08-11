@@ -1,0 +1,12 @@
+# Web 服务
+fastapi>=0.115
+uvicorn>=0.30
+# LLM / 网络
+httpx>=0.27
+pydantic-settings>=2.4
+# 本地向量(bge-m3;体积大头是 torch —— 语义搜索在本机跑,数据不出机器)
+sentence-transformers>=3.0
+sqlite-vec>=0.1.6
+numpy>=1.26
+# 可选:./boss.sh login / fetch / probe 这些主动采集实验才需要
+# playwright>=1.45

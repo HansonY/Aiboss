@@ -1,0 +1,15 @@
+# ── 密钥与登录态:永远只在本机 ──
+.env
+.env.*
+!.env.example
+
+# ── 数据:岗位库、原始捕获、待提取队列、浏览器 profile ──
+data/
+logs/
+
+# ── 环境 ──
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+.claude/
