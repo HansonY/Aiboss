@@ -559,12 +559,13 @@ async def get_me() -> dict[str, Any]:
 
 @app.post("/api/boss/me/parse")
 async def parse_resume(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
-    """粘简历原文 → AI 抽结构化。**只返回建议值,不写生效字段。**
+    """粘简历原文 → AI 提取特征。**提取完直接生效,没有「保存」这一步。**
 
-    生效值要等人在页面上过一遍再 POST /api/boss/me —— 「可手改」是整套匹配
-    可信的前提:AI 抽错了你能纠,分数才有意义。
+    用户定的交互:不加额外操作 —— 提取出来是什么就是什么;
+    抽不出来的项(AI 留 null 的)页面上可以**补全**,但已提取的值不给改 ——
+    要改就改简历原文重新提取,原文才是唯一事实源。
 
-    原文倒是立刻存(`resume_raw`),因为它永不覆盖、永不删:抽取口径以后会改,
+    原文立刻存且永不静默覆盖(换原文要显式确认):抽取口径以后会改,
     原文在就能重抽,原文丢了得重新翻简历。
     """
     text = str(body.get("text") or "").strip()
@@ -582,9 +583,11 @@ async def parse_resume(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
     except Exception as e:                       # noqa: BLE001  LLM 侧各种异常
         return {"error": f"{type(e).__name__}: {e}"}
 
+    # 提取值直接落库(含 None —— 「重新提取」就是重置,抽不出的回到待补全)。
+    # avoid(不接受什么)不在提取范围,保持用户勾的不动。
     bs.set_me(resume_raw=text, replace_raw=True,
               parsed_json=json.dumps(r["parsed"], ensure_ascii=False),
-              parsed_by=r["parsed_by"])
+              parsed_by=r["parsed_by"], **r["live"])
     return r
 
 
