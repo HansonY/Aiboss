@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "我的岗位库",
-  "version": "0.4.0",
-  "description": "在 BOSS 浏览时自动把岗位页原文存进本机知识库(AI 事后提取,不用管接口)。也可以粘一批链接让它逐个打开、存完就走。数据只到 localhost。",
+  "name": "Aiboss · 我的岗位库",
+  "version": "0.5.0",
+  "description": "开着侧边栏逛 BOSS:岗位页自动存进本机知识库,详情页当场出 AI 匹配分。面板关掉就完全停止。数据只到 localhost,不去任何别的地方。",
   "permissions": [
     "storage",
     "tabs",
@@ -42,7 +42,7 @@
     }
   ],
   "action": {
-    "default_title": "我的岗位库"
+    "default_title": "Aiboss · 我的岗位库"
   },
   "side_panel": {
     "default_path": "sidepanel.html"
