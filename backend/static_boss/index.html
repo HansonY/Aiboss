@@ -12,9 +12,8 @@
  .top .dbp{font-family:var(--mono);font-size:10.5px;color:var(--dim2)}
  .top .sp{margin-left:auto;display:flex;gap:12px;align-items:center}
  .scroll{flex:1 1 auto;overflow-y:auto;padding:22px 24px 70px}
- .wrap{max-width:960px;margin:0 auto}
- h2{font-size:12px;font-weight:600;color:var(--dim);letter-spacing:.4px;
-   margin:26px 0 4px;text-transform:none}
+ .wrap{max-width:1080px;margin:0 auto}
+ h2{font-size:12px;font-weight:600;color:var(--dim);letter-spacing:.4px;margin:26px 0 4px}
  h2:first-of-type{margin-top:0}
  .lead{font-size:11.5px;color:var(--dim2);line-height:1.65;margin:0 0 12px}
  .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:4px}
@@ -33,7 +32,6 @@
  tr:last-child td{border-bottom:0}
  td.n{text-align:right;font-family:var(--mono);color:var(--accent-text);white-space:nowrap}
  td.t{font-family:var(--mono);font-size:11px;color:var(--dim2);white-space:nowrap}
- td.co{color:var(--dim)}
  .pill{display:inline-block;font-size:10px;padding:1.5px 6px;border-radius:5px;
    border:1px solid var(--line);color:var(--dim2)}
  .pill.have{border-color:var(--ok-line);background:var(--ok-dim);color:var(--ok)}
@@ -50,56 +48,59 @@
  .empty{padding:26px 20px;text-align:center;color:var(--dim);font-size:12px;line-height:1.8}
  a.lk{color:var(--accent-text);text-decoration:none;font-size:12px}
  a.lk:hover{text-decoration:underline}
- /* 搜索 */
- .srch{display:flex;gap:9px;margin-bottom:10px}
- .srch input{flex:1;background:var(--surface);color:var(--fg);border:1px solid var(--line);
-   border-radius:9px;padding:9px 12px;font-size:13px;font-family:inherit}
- .srch input:focus{outline:none;border-color:var(--accent-line)}
- .hit{padding:10px 14px;border-bottom:1px solid var(--line)}
- .hit:last-child{border-bottom:0}
- .hit .h1r{display:flex;gap:10px;align-items:baseline}
- .hit .ttl{font-size:13px;color:var(--fg);font-weight:500}
- .hit .sc{font-family:var(--mono);font-size:11px;color:var(--violet-text)}
- .hit .fit{font-family:var(--mono);font-size:12px;color:var(--accent-text);margin-left:auto}
- .hit .meta{font-size:11px;color:var(--dim2);margin-top:2px}
- .hit .frag{font-size:11.5px;color:var(--dim);line-height:1.6;margin-top:4px;
-   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
- /* 待提取勾选 */
+
+ /* ── 岗位库:左列表 + 右内容 ── */
+ .lib{display:flex;height:620px}
+ .lb-l{flex:0 0 330px;display:flex;flex-direction:column;border-right:1px solid var(--line);min-width:0}
+ .lsearch{display:flex;gap:6px;padding:10px;border-bottom:1px solid var(--line);background:#0f1217}
+ .lsearch input{flex:1;min-width:0;background:var(--bg);color:var(--fg);border:1px solid var(--line);
+   border-radius:8px;padding:7px 10px;font-size:12px;font-family:inherit}
+ .lsearch input:focus{outline:none;border-color:var(--accent-line)}
+ .lsearch .btn{padding:6px 10px;font-size:11.5px;white-space:nowrap}
+ .lnote{font-size:10px;color:var(--dim2);padding:6px 12px;border-bottom:1px solid var(--line);
+   line-height:1.5}
+ .lnote:empty{display:none}
+ .jlist{flex:1;overflow-y:auto}
+ .jrow{padding:9px 12px;border-bottom:1px solid var(--line);cursor:pointer}
+ .jrow:hover{background:rgba(76,141,255,.05)}
+ .jrow.on{background:var(--accent-dim);box-shadow:inset 2px 0 0 var(--accent)}
+ .jrow .t{font-size:12.5px;color:var(--fg);line-height:1.4;display:flex;gap:8px;align-items:baseline}
+ .jrow .t span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .jrow .fit{font-family:var(--mono);font-size:12px;color:var(--accent-text)}
+ .jrow .sc{font-family:var(--mono);font-size:10px;color:var(--violet-text)}
+ .jrow .m{font-size:10.5px;color:var(--dim2);margin-top:2px;overflow:hidden;
+   text-overflow:ellipsis;white-space:nowrap}
+ .lb-r{flex:1;overflow-y:auto;padding:16px 18px;min-width:0}
+
+ /* 右侧内容排版:一层一层来,不挤在一行 */
+ .jp h3{margin:0 0 10px;font-size:16px;font-weight:600;line-height:1.4}
+ .kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:4px}
+ .kv>div{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 10px}
+ .kv b{display:block;font-size:12.5px;font-weight:500;color:var(--fg);line-height:1.35;
+   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .kv b.acc{color:var(--accent-text);font-family:var(--mono)}
+ .kv span{font-size:9.5px;color:var(--dim2)}
+ .sec{font-size:10.5px;color:var(--dim2);letter-spacing:.4px;margin:16px 0 7px;font-weight:600}
+ .chips{display:flex;flex-wrap:wrap;gap:6px}
+ .chip{font-size:11px;font-family:var(--mono);padding:3px 8px;border-radius:6px;
+   border:1px solid var(--line2);background:var(--bg);color:var(--dim)}
+ .chip.f{border-color:var(--accent-line);background:var(--accent-dim);color:var(--accent-text)}
+ .jd{font-size:12.5px;color:var(--fg);line-height:1.85;white-space:pre-wrap;
+   background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:13px 15px}
+ .mrow{display:flex;gap:12px;align-items:center;margin-top:14px;padding:11px 14px;
+   border:1px solid var(--accent-line);border-radius:10px;background:var(--accent-dim)}
+ .mrow .fitn{font-family:var(--mono);font-size:22px;font-weight:600;color:var(--accent-text)}
+ .jfoot{display:flex;gap:14px;align-items:center;margin-top:14px;flex-wrap:wrap;
+   font-size:10.5px;color:var(--dim2)}
+
+ /* 待提取 */
  td.ck{width:26px;text-align:center}
  input[type=checkbox]{accent-color:var(--accent)}
  .bar{display:flex;gap:10px;align-items:center;padding:10px 12px;background:#0f1217;
    border-bottom:1px solid var(--line);flex-wrap:wrap}
  .bar .eta{font-size:11px;color:var(--dim);font-family:var(--mono)}
  .bar .eta b{color:var(--accent-text)}
- /* 岗位内容浮窗 */
- .ovl{position:fixed;inset:0;background:rgba(4,6,9,.72);z-index:60;display:none;
-   align-items:flex-start;justify-content:center;padding:5vh 16px}
- .ovl.on{display:flex}
- .pop{background:var(--surface);border:1px solid var(--line2);border-radius:14px;
-   max-width:760px;width:100%;max-height:86vh;display:flex;flex-direction:column;
-   box-shadow:0 18px 60px rgba(0,0,0,.55)}
- .pop .ph{display:flex;gap:12px;align-items:flex-start;padding:16px 18px 12px;
-   border-bottom:1px solid var(--line)}
- .pop .ph h3{margin:0;font-size:15px;font-weight:600;line-height:1.4;flex:1}
- .pop .ph .x{cursor:pointer;color:var(--dim2);font-size:20px;line-height:1;padding:2px 6px}
- .pop .ph .x:hover{color:var(--fg)}
- .pop .pb{overflow-y:auto;padding:14px 18px 18px}
- .pop .meta{font-size:12px;color:var(--dim);line-height:1.7}
- .pop .sec{font-size:10.5px;color:var(--dim2);letter-spacing:.4px;margin:14px 0 6px;
-   font-weight:600}
- .pop .jd{font-size:12.5px;color:var(--fg);line-height:1.8;white-space:pre-wrap;
-   background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:12px 14px}
- .pop .chips{display:flex;flex-wrap:wrap;gap:6px}
- .pop .chip{font-size:11px;font-family:var(--mono);padding:3px 8px;border-radius:6px;
-   border:1px solid var(--line2);background:var(--bg);color:var(--dim)}
- .pop .chip.f{border-color:var(--accent-line);background:var(--accent-dim);color:var(--accent-text)}
- .pop .pf{display:flex;gap:12px;align-items:center;padding:11px 18px;
-   border-top:1px solid var(--line);flex-wrap:wrap}
- .pop .fit{font-family:var(--mono);font-size:16px;font-weight:600;color:var(--accent-text)}
- tr[data-id]{cursor:pointer}
- tr[data-id]:hover td{background:rgba(76,141,255,.05)}
- .hit{cursor:pointer}
- .hit:hover{background:rgba(76,141,255,.05)}
+ /* AI 设置 */
  .alab{display:block;font-size:10px;color:var(--dim2);margin-bottom:3px}
  .ainp{background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;
    padding:7px 10px;font-size:12px;font-family:inherit;min-width:120px}
@@ -124,7 +125,7 @@
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
         <div><label class="alab">供应商</label><select id="aprov" class="ainp"></select></div>
         <div style="flex:1;min-width:200px"><label class="alab">API Key(只回尾四位,永不回明文)</label>
-          <input id="akey" class="ainp" type="password" placeholder="粘这家的 key;留空 = 不改"></div>
+          <input id="akey" class="ainp" type="password" placeholder="粘这家的 key;留空 = 不改" style="width:100%;box-sizing:border-box"></div>
         <div><label class="alab">模型(留空用默认)</label><input id="amodel" class="ainp" placeholder="默认"></div>
         <div><label class="alab">快档(提取/匹配)</label><input id="afast" class="ainp" placeholder="qwen-flash"></div>
         <button class="btn" id="atest">测一下</button>
@@ -133,21 +134,28 @@
       <div class="msg" id="amsg" style="margin-top:10px"></div>
     </div>
 
-    <h2>搜索(语义,不是关键词)</h2>
-    <p class="lead">按**意思**搜:「远程的 AI 应用岗」「要音视频经验的」都行 ——
-      清洗后的岗位连同归纳特征(办公方式/领域/技术主线)一起转成了向量。<br>
-      第一次搜索要加载本地向量模型(约 10 秒),之后就快了。数据不出本机。</p>
-    <div class="srch">
-      <input id="q" placeholder="例:全职远程的 AI 应用开发 / 要求音视频经验的 iOS 岗">
-      <button class="btn go" id="qgo">搜索</button>
+    <h2>岗位库</h2>
+    <p class="lead">左边挑,右边看。搜索框是**语义过滤**:「远程的 AI 岗」「要音视频经验的」
+      按意思筛这个库(第一次要加载本地向量模型,约 10 秒);清空就回到全部。</p>
+    <div class="box lib">
+      <div class="lb-l">
+        <div class="lsearch">
+          <input id="q" placeholder="语义过滤:远程 AI 岗 / 要音视频的…">
+          <button class="btn go" id="qgo">过滤</button>
+        </div>
+        <div class="lnote" id="lnote"></div>
+        <div class="jlist" id="jlist"><div class="empty">读取中…</div></div>
+      </div>
+      <div class="lb-r" id="jpane">
+        <div class="empty">左边挑一个岗位,这里显示清洗后的全部内容。<br>
+          「匹配」有分的是模型已经分析过的;没分的点进「完整对照」让它跑一次。</div>
+      </div>
     </div>
-    <div class="box" id="hits" style="display:none"></div>
-    <div class="msg" id="qmsg"></div>
 
     <h2>待提取(先清洗,再进库)</h2>
     <p class="lead">插件存进来的是**页面原文**,要先让 AI 清洗:滤掉导航噪音、
-      抽出结构(岗位/公司/薪资/JD/办公方式/领域/技术主线)。
-      勾选要提取的,或直接全部 —— 提取完**自动转向量**,不用再点。</p>
+      抽出结构(岗位/公司/薪资/JD)+ 归纳特征(办公方式/领域/技术主线)。
+      勾选要提取的 —— 提取完**自动转向量**,不用再点。</p>
     <div class="box">
       <div class="bar" id="pbar" style="display:none">
         <label style="font-size:11.5px;color:var(--dim);display:flex;gap:5px;align-items:center">
@@ -158,21 +166,8 @@
       <table id="pend"><tr><td class="empty">读取中…</td></tr></table>
     </div>
     <div class="msg" id="msg"></div>
-
-    <h2>已入库的岗位</h2>
-    <p class="lead">去重按 <b>公司 + 岗位名</b> —— 同一个岗位反复浏览只有一行,
-      信息只会往上补,不会互相冲掉。「匹配」列是模型给的分,点分数看完整对照;
-      「—」表示还没分析,点进去让模型跑一次。</p>
-    <div class="box"><table id="jobs"><tr><td class="empty">读取中…</td></tr></table></div>
   </div></div>
 </div>
-
-<!-- 岗位内容浮窗:岗位表 / 搜索结果点一行就开。只读接口,零 AI。 -->
-<div class="ovl" id="ovl"><div class="pop">
-  <div class="ph"><h3 id="pTitle"></h3><span class="x" id="pClose" title="关闭(Esc)">×</span></div>
-  <div class="pb" id="pBody"></div>
-  <div class="pf" id="pFoot"></div>
-</div></div>
 
 <script>
 'use strict';
@@ -188,7 +183,142 @@ function msg(id, t, cls) {
   m.className = 'msg ' + (cls || ''); m.innerHTML = bold(t || '');
 }
 
-/* ── 待提取:勾选 + ETA ─────────────────────────────────── */
+/* ══ 岗位库:左列表 + 右内容 ══════════════════════════════ */
+const WM = {remote: '全职远程', hybrid: '混合办公', onsite: '现场办公'};
+const VD = {worth: '值得投', maybe: '可以试试', skip: '别浪费'};
+let CUR = null;          // 右侧正在看的 job_id
+let FILTERED = false;    // 过滤中就别让 5 秒刷新把列表冲掉
+let listSig = '';
+
+function rowHtml(j, score) {
+  return `<div class="jrow${j.job_id === CUR ? ' on' : ''}" data-id="${esc(j.job_id)}">
+    <div class="t"><span>${esc(j.title || '(无标题)')}</span>
+      ${score != null ? `<span class="sc">${score.toFixed(3)}</span>` : ''}
+      ${j.fit != null ? `<span class="fit">${j.fit}</span>` : ''}</div>
+    <div class="m">${esc(j.company || '')} · ${esc(j.city || '')} · ${esc(j.salary_text || j.salary || '')}${
+      j.jd_state === 'have' ? '' : ' · 没JD'}</div>
+  </div>`;
+}
+
+function bindRows() {
+  document.querySelectorAll('#jlist .jrow').forEach(el => el.onclick = () => {
+    CUR = el.dataset.id;
+    document.querySelectorAll('#jlist .jrow').forEach(r =>
+      r.classList.toggle('on', r.dataset.id === CUR));
+    renderPane(CUR);
+  });
+}
+
+function drawList(items, note) {
+  $('#lnote').innerHTML = note || '';
+  $('#jlist').innerHTML = items.length
+    ? items.map(j => rowHtml(j, j._score)).join('')
+    : '<div class="empty">这里还没有岗位。<br>开着插件侧边栏逛 BOSS,岗位自动进库。</div>';
+  bindRows();
+}
+
+async function renderPane(id) {
+  const pane = $('#jpane');
+  pane.innerHTML = '<div class="empty">读取中…</div>';
+  let d;
+  try { d = await (await fetch('/api/boss/job/' + encodeURIComponent(id))).json(); }
+  catch (e) { pane.innerHTML = '<div class="empty">读不到本地服务</div>'; return; }
+  if (d.error) { pane.innerHTML = `<div class="empty">${esc(d.error)}</div>`; return; }
+  if (id !== CUR) return;                    // 已经点了别的,别渲染旧的
+  const j = d.job;
+
+  // 基本信息:一格一项,不挤成一行 —— 「乱」就是从一行长串来的
+  const kv = [
+    [j.company, '公司'], [j.city + (j.district ? '·' + j.district : ''), '城市'],
+    [j.salary_text || '未写', '薪资', 'acc'],
+    [j.experience || '未写', '经验要求'], [j.degree || '未写', '学历要求'],
+  ];
+  if (j.job_state === 'closed') kv.push(['已关闭', '岗位状态']);
+  const acts = (d.interactions || []).map(i =>
+    `${{saved: '已收藏', applied: '投递', chatted: '沟通', viewed: '浏览'}[i.kind] || i.kind}${
+      i.status && i.status !== 'unknown' ? '·' + i.status : ''}`).join(' / ');
+  if (acts) kv.push([acts, '我和它']);
+
+  const feat = [];
+  if (WM[j.work_mode]) feat.push(WM[j.work_mode]);
+  if (j.domain) feat.push(j.domain);
+  for (const x of (j.stack || [])) feat.push(x);
+  if (j.sell) feat.push('✦ ' + j.sell);
+
+  const tags = j.tags || [];
+  pane.innerHTML = `<div class="jp">
+    <h3>${esc(j.title || '(无标题)')}</h3>
+    <div class="kv">${kv.map(([v, k, c]) =>
+      `<div><b class="${c || ''}" title="${esc(v)}">${esc(v)}</b><span>${k}</span></div>`).join('')}</div>
+
+    ${d.match
+      ? `<div class="mrow"><span class="fitn">${d.match.fit}</span>
+           <span class="pill">${VD[d.match.verdict] || d.match.verdict || ''}</span>
+           <span style="font-size:10.5px;color:var(--dim)">模型给的匹配分(已缓存,不会自己变)</span>
+           <a class="lk" style="margin-left:auto" href="/match.html#${esc(j.job_id)}">完整对照 →</a></div>`
+      : `<div class="mrow" style="border-color:var(--line);background:var(--bg)">
+           <span style="font-size:11.5px;color:var(--dim)">还没让模型分析过这个岗位</span>
+           <a class="lk" style="margin-left:auto" href="/match.html#${esc(j.job_id)}">AI 分析匹配 →</a></div>`}
+
+    ${feat.length ? `<div class="sec">归纳特征(AI 清洗时提的,也进了向量)</div>
+      <div class="chips">${feat.map(f => `<span class="chip f">${esc(f)}</span>`).join('')}</div>` : ''}
+
+    <div class="sec">职位描述${j.jd_state === 'have' ? '(原文,未改写)' : ''}</div>
+    ${j.jd ? `<div class="jd">${esc(j.jd)}</div>`
+      : `<div class="jd" style="color:var(--dim2)">还没抓到职位描述 ——
+         列表页看到的没有 JD;开着插件点进它的详情页就会自动补上。</div>`}
+
+    ${tags.length ? `<div class="sec">页面上出现过的技能词(${tags.length} 个)</div>
+      <div class="chips">${tags.slice(0, 40).map(t => `<span class="chip">${esc(t)}</span>`).join('')}${
+        tags.length > 40 ? `<span class="chip">+${tags.length - 40}</span>` : ''}</div>` : ''}
+
+    <div class="jfoot">
+      ${j.url ? `<a class="lk" href="${esc(j.url)}" target="_blank" rel="noreferrer">看原页 ↗</a>` : ''}
+      <span>存入 ${esc((j.first_seen || '').slice(0, 10))}</span>
+      <span>更新 ${esc((j.updated_at || '').replace('T', ' ').slice(5, 16))}</span>
+    </div>
+  </div>`;
+}
+
+/* ── 语义过滤:结果进同一个左列表,清空恢复 ── */
+async function doFilter() {
+  const q = $('#q').value.trim();
+  if (!q) {                                  // 清空 = 回到全部
+    FILTERED = false; listSig = '';
+    $('#lnote').innerHTML = '';
+    load();
+    return;
+  }
+  const b = $('#qgo'); b.disabled = true; b.textContent = '过滤中…';
+  $('#lnote').innerHTML = '语义检索中…(第一次要加载向量模型,约 10 秒)';
+  try {
+    const d = await (await fetch('/api/boss/search?q=' + encodeURIComponent(q) + '&limit=20')).json();
+    if (d.error) {
+      $('#lnote').innerHTML = `<span style="color:var(--warn-text)">${esc(d.error)}</span>`;
+      return;
+    }
+    FILTERED = true;
+    const hs = (d.good || []).concat(d.maybe || []);
+    // 同一个岗位可能命中多个片段 —— 按 job_id 去重,留分数最高的那条
+    const seen = new Map();
+    for (const h of hs) if (!seen.has(h.job_id)) seen.set(h.job_id, h);
+    const items = [...seen.values()].map(h => ({
+      job_id: h.job_id, title: h.title, company: h.company, city: h.city,
+      salary: h.salary, jd_state: h.jd_state, fit: h.fit, _score: h.score,
+    }));
+    drawList(items,
+      `过滤:「${esc(q)}」→ ${items.length} 个岗位` +
+      ((d.good || []).length ? '' : '(全部只是「可能相关」档)') +
+      ' · <a class="lk" id="qclear" style="cursor:pointer">清除,回到全部</a>');
+    document.getElementById('qclear').onclick = () => { $('#q').value = ''; doFilter(); };
+  } catch (e) {
+    $('#lnote').innerHTML = `<span style="color:var(--warn-text)">出错:${esc(e.message)}</span>`;
+  } finally { b.disabled = false; b.textContent = '过滤'; }
+}
+$('#qgo').onclick = doFilter;
+$('#q').onkeydown = e => { if (e.key === 'Enter') doFilter(); };
+
+/* ══ 待提取:勾选 + ETA ══════════════════════════════════ */
 let PEND = [];
 
 function selKeys() {
@@ -253,67 +383,25 @@ $('#extract').onclick = async () => {
     else msg('#msg', `新增 ${d.extracted} 个岗位`
       + (d.updated ? `,更新 ${d.updated} 个` : '')
       + ` · 用了 ${d.ai_calls} 次 AI 调用`
-      + (d.index_started ? ' · **向量同步已自动开始**(后台进程,上面「向量」那格过会儿会动)' : '')
+      + (d.index_started ? ' · **向量同步已自动开始**(上面「向量」那格过会儿会动)' : '')
       + (d.failed?.length ? ` · ${d.failed.length} 批失败:${d.failed[0]}` : ''),
       d.extracted || d.updated ? 'ok' : '');
   } catch (e) { msg('#msg', '出错:' + e.message, 'bad'); }
   b.textContent = old; load();
 };
 
-/* ── 搜索 ─────────────────────────────────────────────── */
-async function doSearch() {
-  const q = $('#q').value.trim();
-  if (!q) return;
-  const b = $('#qgo'); b.disabled = true; b.textContent = '搜索中…';
-  msg('#qmsg', '第一次搜索要加载向量模型,约 10 秒 —— 之后就快了');
-  try {
-    const d = await (await fetch('/api/boss/search?q=' + encodeURIComponent(q))).json();
-    if (d.error) {
-      msg('#qmsg', d.error + (d.need_index ? ' —— 先提取几页岗位,向量会自动建' : ''), 'bad');
-      $('#hits').style.display = 'none';
-      return;
-    }
-    msg('#qmsg', '');
-    const hs = (d.good || []).concat(d.maybe || []);
-    const box = $('#hits');
-    box.style.display = 'block';
-    box.innerHTML = hs.length ? hs.map(h => `<div class="hit" data-id="${esc(h.job_id)}" title="点开看内容">
-        <div class="h1r">
-          <span class="ttl">${esc(h.title || '(无标题)')}</span>
-          <span class="sc">${(h.score ?? 0).toFixed(3)}</span>
-          <span class="fit">${h.fit != null
-            ? `<a class="lk" href="/match.html#${esc(h.job_id)}">匹配 ${h.fit}</a>`
-            : `<a class="lk" style="color:var(--dim2)" href="/match.html#${esc(h.job_id)}">未分析</a>`}</span>
-        </div>
-        <div class="meta">${esc(h.company || '')} · ${esc(h.city || '')} · ${esc(h.salary || '')}
-          ${h.jd_state !== 'have' ? '· <span class="pill">没职位描述</span>' : ''}</div>
-        <div class="frag">${esc(h.text || '')}</div>
-      </div>`).join('')
-      : `<div class="empty">没搜到过 good 线的结果${(d.maybe || []).length ? '' : ' —— 换个说法试试'}</div>`;
-    box.querySelectorAll('.hit[data-id]').forEach(el => el.onclick = e => {
-      if (e.target.closest('a')) return;
-      openJob(el.dataset.id);
-    });
-  } catch (e) {
-    msg('#qmsg', '出错:' + e.message, 'bad');
-  }
-  b.disabled = false; b.textContent = '搜索';
-}
-$('#qgo').onclick = doSearch;
-$('#q').onkeydown = e => { if (e.key === 'Enter') doSearch(); };
-
-/* ── 总览 ─────────────────────────────────────────────── */
+/* ══ 总览 ═══════════════════════════════════════════════ */
 async function load() {
   let st, jb, pd, ix;
   try {
     [st, jb, pd, ix] = await Promise.all([
       fetch('/api/boss/stats').then(r => r.json()),
-      fetch('/api/boss/jobs?limit=60').then(r => r.json()),
+      fetch('/api/boss/jobs?limit=120').then(r => r.json()),
       fetch('/api/boss/pending?limit=100').then(r => r.json()),
       fetch('/api/boss/index/status').then(r => r.json()),
     ]);
   } catch (e) {
-    $('#jobs').innerHTML = `<tr><td class="empty">读不到本地服务 —— 在项目目录跑 ./boss.sh</td></tr>`;
+    $('#jlist').innerHTML = '<div class="empty">读不到本地服务 —— 在项目目录跑 ./boss.sh</div>';
     return;
   }
   $('#db').textContent = st.db || '';
@@ -322,7 +410,7 @@ async function load() {
   const pill = $('#ai');
   pill.className = 'pill' + (a.state === 'ok' ? ' have' : '');
   pill.textContent = 'AI ' + (a.label || '?') + (a.provider ? ' · ' + a.provider : '');
-  pill.title = a.error || '';
+  pill.title = (a.error || '') + ' 点开配置';
 
   const pend = pd.total || 0;
   const vec = ix && !ix.error
@@ -335,91 +423,22 @@ async function load() {
     <div class="fact${ix?.in_sync ? ' on' : ''}"><b>${vec}</b><span>向量${
       ix && !ix.error && !ix.in_sync && !ix.syncing ? `(差 ${ix.pending || 0})` : ''}</span></div>`;
 
-  const jobs = jb.items || [];
-  const VD = {worth: '值得投', maybe: '可以试试', skip: '别浪费'};
-  $('#jobs').innerHTML = jobs.length
-    ? '<tr><th>岗位</th><th>公司</th><th>城市</th><th>薪资</th><th>匹配</th><th>职位描述</th><th>更新</th></tr>'
-      + jobs.map(j => `<tr data-id="${esc(j.job_id)}" title="点开看内容">
-          <td>${esc(j.title) || '<span class="dim">(无标题)</span>'}</td>
-          <td class="co">${esc(j.company || '')}</td>
-          <td class="co">${esc(j.city || '')}</td>
-          <td class="n">${esc(j.salary_text || '')}</td>
-          <td class="n">${j.fit != null
-              ? `<a class="lk" href="/match.html#${esc(j.job_id)}" title="${esc(VD[j.verdict] || '')}">${j.fit}</a>`
-              : `<a class="lk" href="/match.html#${esc(j.job_id)}" style="color:var(--dim2)" title="还没分析,点进去让模型打分">—</a>`}</td>
-          <td><span class="pill${j.jd_state === 'have' ? ' have' : ''}">${
-              {have: '有', none: '没有', unknown: '还没看到'}[j.jd_state] || '?'}</span></td>
-          <td class="t">${esc((j.updated_at || '').replace('T', ' ').slice(5, 16))}</td>
-        </tr>`).join('')
-    : `<tr><td class="empty">还没有岗位。<br>
-         装好插件 → 开着侧边栏浏览 BOSS 岗位页 → 自动存原文 → 回这里提取。</td></tr>`;
+  // 过滤中不动列表(会把过滤结果冲掉);普通模式按内容指纹,变了才重画
+  if (!FILTERED) {
+    const items = jb.items || [];
+    const sig = items.map(j => j.job_id + ':' + (j.fit ?? '')).join('|');
+    if (sig !== listSig) {
+      listSig = sig;
+      drawList(items, items.length >= 120
+        ? `最近 120 个(共 ${jb.total});更早的用上面的过滤找` : '');
+    }
+  }
 
-  // 行点击 → 浮窗(点到「匹配」链接时让链接自己跳,不抢)
-  document.querySelectorAll('#jobs tr[data-id]').forEach(tr => tr.onclick = e => {
-    if (e.target.closest('a')) return;
-    openJob(tr.dataset.id);
-  });
-
-  // 待提取只在集合变了才重画 —— 不然 5 秒一刷会把勾选状态冲掉
-  const sig = (pd.items || []).map(i => i.key).join('|');
-  if (sig !== (drawPend._sig || '')) { drawPend._sig = sig; drawPend(pd.items); }
+  const psig = (pd.items || []).map(i => i.key).join('|');
+  if (psig !== (drawPend._sig || '')) { drawPend._sig = psig; drawPend(pd.items); }
 }
 
-/* ── 岗位内容浮窗 ─────────────────────────────────────── */
-const WM = {remote: '全职远程', hybrid: '混合办公', onsite: '现场办公'};
-const VD2 = {worth: '值得投', maybe: '可以试试', skip: '别浪费'};
-
-async function openJob(id) {
-  const ovl = $('#ovl');
-  ovl.classList.add('on');
-  $('#pTitle').textContent = '读取中…';
-  $('#pBody').innerHTML = ''; $('#pFoot').innerHTML = '';
-  let d;
-  try { d = await (await fetch('/api/boss/job/' + encodeURIComponent(id))).json(); }
-  catch (e) { $('#pTitle').textContent = '读不到本地服务'; return; }
-  if (d.error) { $('#pTitle').textContent = d.error; return; }
-  const j = d.job;
-  $('#pTitle').textContent = j.title || '(无标题)';
-
-  const feat = [];
-  if (WM[j.work_mode]) feat.push(`<span class="chip f">${WM[j.work_mode]}</span>`);
-  if (j.domain) feat.push(`<span class="chip f">${esc(j.domain)}</span>`);
-  for (const x of (j.stack || [])) feat.push(`<span class="chip f">${esc(x)}</span>`);
-  if (j.sell) feat.push(`<span class="chip f" title="卖点">✦ ${esc(j.sell)}</span>`);
-
-  const acts = (d.interactions || []).map(i =>
-    `${{saved: '已收藏', applied: '投递', chatted: '沟通', viewed: '浏览'}[i.kind] || i.kind}${
-      i.status && i.status !== 'unknown' ? '·' + i.status : ''}`).join(' / ');
-
-  $('#pBody').innerHTML = `
-    <div class="meta">${esc(j.company || '?')} · ${esc(j.city || '?')}${
-      j.district ? '·' + esc(j.district) : ''} · <b style="color:var(--accent-text)">${
-      esc(j.salary_text || '薪资未写')}</b> · 经验 ${esc(j.experience || '未写')} · 学历 ${
-      esc(j.degree || '未写')}${
-      j.job_state === 'closed' ? ' · <span class="pill warn">已关闭</span>' : ''}${
-      acts ? ' · ' + esc(acts) : ''}</div>
-    ${feat.length ? `<div class="sec">归纳特征(AI 清洗时提的,也进了向量)</div>
-      <div class="chips">${feat.join('')}</div>` : ''}
-    ${(j.tags || []).length ? `<div class="sec">页面上出现过的技能词</div>
-      <div class="chips">${j.tags.map(t => `<span class="chip">${esc(t)}</span>`).join('')}</div>` : ''}
-    <div class="sec">职位描述${j.jd_state === 'have' ? '(原文,未改写)' : ''}</div>
-    ${j.jd ? `<div class="jd">${esc(j.jd)}</div>`
-      : `<div class="jd" style="color:var(--dim2)">还没抓到职位描述 ——
-         列表页看到的没有 JD;开着插件点进它的详情页就会自动补上。</div>`}`;
-
-  $('#pFoot').innerHTML = `
-    ${d.match ? `<span class="fit">${d.match.fit}</span>
-       <span class="pill">${VD2[d.match.verdict] || d.match.verdict || ''}</span>` : ''}
-    <a class="lk" href="/match.html#${esc(j.job_id)}">${d.match ? '完整对照 →' : 'AI 分析匹配 →'}</a>
-    ${j.url ? `<a class="lk" href="${esc(j.url)}" target="_blank" rel="noreferrer">看原页 ↗</a>` : ''}
-    <span style="margin-left:auto;font-size:10px;color:var(--dim2)">存入 ${
-      esc((j.first_seen || '').slice(0, 10))} · 更新 ${esc((j.updated_at || '').replace('T', ' ').slice(5, 16))}</span>`;
-}
-$('#pClose').onclick = () => $('#ovl').classList.remove('on');
-$('#ovl').onclick = e => { if (e.target === $('#ovl')) $('#ovl').classList.remove('on'); };
-document.addEventListener('keydown', e => { if (e.key === 'Escape') $('#ovl').classList.remove('on'); });
-
-/* ── AI 设置卡:胶囊点开;保存写 .env(白名单、密钥只回尾四位)── */
+/* ══ AI 设置卡 ══════════════════════════════════════════ */
 let AIP = [];
 $('#ai').onclick = async () => {
   const card = $('#aicard');
