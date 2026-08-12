@@ -71,6 +71,35 @@
    border-bottom:1px solid var(--line);flex-wrap:wrap}
  .bar .eta{font-size:11px;color:var(--dim);font-family:var(--mono)}
  .bar .eta b{color:var(--accent-text)}
+ /* 岗位内容浮窗 */
+ .ovl{position:fixed;inset:0;background:rgba(4,6,9,.72);z-index:60;display:none;
+   align-items:flex-start;justify-content:center;padding:5vh 16px}
+ .ovl.on{display:flex}
+ .pop{background:var(--surface);border:1px solid var(--line2);border-radius:14px;
+   max-width:760px;width:100%;max-height:86vh;display:flex;flex-direction:column;
+   box-shadow:0 18px 60px rgba(0,0,0,.55)}
+ .pop .ph{display:flex;gap:12px;align-items:flex-start;padding:16px 18px 12px;
+   border-bottom:1px solid var(--line)}
+ .pop .ph h3{margin:0;font-size:15px;font-weight:600;line-height:1.4;flex:1}
+ .pop .ph .x{cursor:pointer;color:var(--dim2);font-size:20px;line-height:1;padding:2px 6px}
+ .pop .ph .x:hover{color:var(--fg)}
+ .pop .pb{overflow-y:auto;padding:14px 18px 18px}
+ .pop .meta{font-size:12px;color:var(--dim);line-height:1.7}
+ .pop .sec{font-size:10.5px;color:var(--dim2);letter-spacing:.4px;margin:14px 0 6px;
+   font-weight:600}
+ .pop .jd{font-size:12.5px;color:var(--fg);line-height:1.8;white-space:pre-wrap;
+   background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:12px 14px}
+ .pop .chips{display:flex;flex-wrap:wrap;gap:6px}
+ .pop .chip{font-size:11px;font-family:var(--mono);padding:3px 8px;border-radius:6px;
+   border:1px solid var(--line2);background:var(--bg);color:var(--dim)}
+ .pop .chip.f{border-color:var(--accent-line);background:var(--accent-dim);color:var(--accent-text)}
+ .pop .pf{display:flex;gap:12px;align-items:center;padding:11px 18px;
+   border-top:1px solid var(--line);flex-wrap:wrap}
+ .pop .fit{font-family:var(--mono);font-size:16px;font-weight:600;color:var(--accent-text)}
+ tr[data-id]{cursor:pointer}
+ tr[data-id]:hover td{background:rgba(76,141,255,.05)}
+ .hit{cursor:pointer}
+ .hit:hover{background:rgba(76,141,255,.05)}
  .alab{display:block;font-size:10px;color:var(--dim2);margin-bottom:3px}
  .ainp{background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;
    padding:7px 10px;font-size:12px;font-family:inherit;min-width:120px}
@@ -137,6 +166,13 @@
     <div class="box"><table id="jobs"><tr><td class="empty">读取中…</td></tr></table></div>
   </div></div>
 </div>
+
+<!-- 岗位内容浮窗:岗位表 / 搜索结果点一行就开。只读接口,零 AI。 -->
+<div class="ovl" id="ovl"><div class="pop">
+  <div class="ph"><h3 id="pTitle"></h3><span class="x" id="pClose" title="关闭(Esc)">×</span></div>
+  <div class="pb" id="pBody"></div>
+  <div class="pf" id="pFoot"></div>
+</div></div>
 
 <script>
 'use strict';
@@ -241,7 +277,7 @@ async function doSearch() {
     const hs = (d.good || []).concat(d.maybe || []);
     const box = $('#hits');
     box.style.display = 'block';
-    box.innerHTML = hs.length ? hs.map(h => `<div class="hit">
+    box.innerHTML = hs.length ? hs.map(h => `<div class="hit" data-id="${esc(h.job_id)}" title="点开看内容">
         <div class="h1r">
           <span class="ttl">${esc(h.title || '(无标题)')}</span>
           <span class="sc">${(h.score ?? 0).toFixed(3)}</span>
@@ -254,6 +290,10 @@ async function doSearch() {
         <div class="frag">${esc(h.text || '')}</div>
       </div>`).join('')
       : `<div class="empty">没搜到过 good 线的结果${(d.maybe || []).length ? '' : ' —— 换个说法试试'}</div>`;
+    box.querySelectorAll('.hit[data-id]').forEach(el => el.onclick = e => {
+      if (e.target.closest('a')) return;
+      openJob(el.dataset.id);
+    });
   } catch (e) {
     msg('#qmsg', '出错:' + e.message, 'bad');
   }
@@ -299,7 +339,7 @@ async function load() {
   const VD = {worth: '值得投', maybe: '可以试试', skip: '别浪费'};
   $('#jobs').innerHTML = jobs.length
     ? '<tr><th>岗位</th><th>公司</th><th>城市</th><th>薪资</th><th>匹配</th><th>职位描述</th><th>更新</th></tr>'
-      + jobs.map(j => `<tr>
+      + jobs.map(j => `<tr data-id="${esc(j.job_id)}" title="点开看内容">
           <td>${esc(j.title) || '<span class="dim">(无标题)</span>'}</td>
           <td class="co">${esc(j.company || '')}</td>
           <td class="co">${esc(j.city || '')}</td>
@@ -314,10 +354,70 @@ async function load() {
     : `<tr><td class="empty">还没有岗位。<br>
          装好插件 → 开着侧边栏浏览 BOSS 岗位页 → 自动存原文 → 回这里提取。</td></tr>`;
 
+  // 行点击 → 浮窗(点到「匹配」链接时让链接自己跳,不抢)
+  document.querySelectorAll('#jobs tr[data-id]').forEach(tr => tr.onclick = e => {
+    if (e.target.closest('a')) return;
+    openJob(tr.dataset.id);
+  });
+
   // 待提取只在集合变了才重画 —— 不然 5 秒一刷会把勾选状态冲掉
   const sig = (pd.items || []).map(i => i.key).join('|');
   if (sig !== (drawPend._sig || '')) { drawPend._sig = sig; drawPend(pd.items); }
 }
+
+/* ── 岗位内容浮窗 ─────────────────────────────────────── */
+const WM = {remote: '全职远程', hybrid: '混合办公', onsite: '现场办公'};
+const VD2 = {worth: '值得投', maybe: '可以试试', skip: '别浪费'};
+
+async function openJob(id) {
+  const ovl = $('#ovl');
+  ovl.classList.add('on');
+  $('#pTitle').textContent = '读取中…';
+  $('#pBody').innerHTML = ''; $('#pFoot').innerHTML = '';
+  let d;
+  try { d = await (await fetch('/api/boss/job/' + encodeURIComponent(id))).json(); }
+  catch (e) { $('#pTitle').textContent = '读不到本地服务'; return; }
+  if (d.error) { $('#pTitle').textContent = d.error; return; }
+  const j = d.job;
+  $('#pTitle').textContent = j.title || '(无标题)';
+
+  const feat = [];
+  if (WM[j.work_mode]) feat.push(`<span class="chip f">${WM[j.work_mode]}</span>`);
+  if (j.domain) feat.push(`<span class="chip f">${esc(j.domain)}</span>`);
+  for (const x of (j.stack || [])) feat.push(`<span class="chip f">${esc(x)}</span>`);
+  if (j.sell) feat.push(`<span class="chip f" title="卖点">✦ ${esc(j.sell)}</span>`);
+
+  const acts = (d.interactions || []).map(i =>
+    `${{saved: '已收藏', applied: '投递', chatted: '沟通', viewed: '浏览'}[i.kind] || i.kind}${
+      i.status && i.status !== 'unknown' ? '·' + i.status : ''}`).join(' / ');
+
+  $('#pBody').innerHTML = `
+    <div class="meta">${esc(j.company || '?')} · ${esc(j.city || '?')}${
+      j.district ? '·' + esc(j.district) : ''} · <b style="color:var(--accent-text)">${
+      esc(j.salary_text || '薪资未写')}</b> · 经验 ${esc(j.experience || '未写')} · 学历 ${
+      esc(j.degree || '未写')}${
+      j.job_state === 'closed' ? ' · <span class="pill warn">已关闭</span>' : ''}${
+      acts ? ' · ' + esc(acts) : ''}</div>
+    ${feat.length ? `<div class="sec">归纳特征(AI 清洗时提的,也进了向量)</div>
+      <div class="chips">${feat.join('')}</div>` : ''}
+    ${(j.tags || []).length ? `<div class="sec">页面上出现过的技能词</div>
+      <div class="chips">${j.tags.map(t => `<span class="chip">${esc(t)}</span>`).join('')}</div>` : ''}
+    <div class="sec">职位描述${j.jd_state === 'have' ? '(原文,未改写)' : ''}</div>
+    ${j.jd ? `<div class="jd">${esc(j.jd)}</div>`
+      : `<div class="jd" style="color:var(--dim2)">还没抓到职位描述 ——
+         列表页看到的没有 JD;开着插件点进它的详情页就会自动补上。</div>`}`;
+
+  $('#pFoot').innerHTML = `
+    ${d.match ? `<span class="fit">${d.match.fit}</span>
+       <span class="pill">${VD2[d.match.verdict] || d.match.verdict || ''}</span>` : ''}
+    <a class="lk" href="/match.html#${esc(j.job_id)}">${d.match ? '完整对照 →' : 'AI 分析匹配 →'}</a>
+    ${j.url ? `<a class="lk" href="${esc(j.url)}" target="_blank" rel="noreferrer">看原页 ↗</a>` : ''}
+    <span style="margin-left:auto;font-size:10px;color:var(--dim2)">存入 ${
+      esc((j.first_seen || '').slice(0, 10))} · 更新 ${esc((j.updated_at || '').replace('T', ' ').slice(5, 16))}</span>`;
+}
+$('#pClose').onclick = () => $('#ovl').classList.remove('on');
+$('#ovl').onclick = e => { if (e.target === $('#ovl')) $('#ovl').classList.remove('on'); };
+document.addEventListener('keydown', e => { if (e.key === 'Escape') $('#ovl').classList.remove('on'); });
 
 /* ── AI 设置卡:胶囊点开;保存写 .env(白名单、密钥只回尾四位)── */
 let AIP = [];

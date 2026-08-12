@@ -905,6 +905,31 @@ async def enrich(limit: int = Query(400, ge=1, le=1000)) -> dict[str, Any]:
             "index_started": idx.get("started", False)}
 
 
+@app.get("/api/boss/job/{job_id}")
+async def job_detail(job_id: str) -> dict[str, Any]:
+    """一个岗位清洗后的全部内容 —— 岗位库/搜索结果点开浮窗用。
+
+    只读、零 AI、不需要录过简历(和 /match/{id} 的区别:那个要算门槛,
+    没简历会拒;看内容不该有这个门槛)。
+    """
+    job = bs.get_job(job_id)
+    if not job:
+        return {"error": "库里没有这个岗位"}
+    for k in ("tags", "stack"):
+        try:
+            job[k] = json.loads(job[k]) if job.get(k) else []
+        except ValueError:
+            job[k] = []
+    with bs.connect() as c:
+        m = c.execute(
+            "SELECT fit, verdict, computed_at FROM job_match "
+            "WHERE job_id=? AND prompt_ver=?",
+            (job_id, boss_matchai.PROMPT_VER)).fetchone()
+        ints = [dict(r) for r in c.execute(
+            "SELECT kind, status, note FROM interactions WHERE job_id=?", (job_id,))]
+    return {"job": job, "match": dict(m) if m else None, "interactions": ints}
+
+
 @app.get("/api/boss/matches")
 async def match_list(limit: int = Query(100, ge=1, le=300)) -> dict[str, Any]:
     """分析过的岗位,按模型给的 fit 降序。
