@@ -42,7 +42,7 @@ STATIC_DIR = Path(__file__).resolve().parent / "static_boss"
 # 我还不知道 BOSS 的字段长什么样,凭记忆写解析必错(这个项目已经吃过几次亏)。
 CAPTURE_DIR = ROOT / "data" / "boss_capture"
 
-app = FastAPI(title="Douyin-DB · BOSS", version="0.1.0")
+app = FastAPI(title="Aiboss", version="0.1.0")
 
 # 插件的 content script 跑在 zhipin.com 源上,要往 localhost 发 —— 必须放行。
 # 只放行这一个用途,不是全站开放。
