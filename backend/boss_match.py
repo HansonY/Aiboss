@@ -327,6 +327,14 @@ def gate(job: dict[str, Any], prefs: dict[str, Any]) -> dict[str, Any]:
     parse_fail: list[str] = []
 
     def add(name: str, verdict: str, need: Any, got: Any, note: str = "") -> None:
+        """`need` = **岗位要求的**,`got` = **我的**。四项必须一个方向。
+
+        ⚠️ 城市和薪资这两项原来是反的(need 放我的期望城市/薪资底线,
+        got 放岗位的)—— 而 UI 和喂给模型的 C 段都按「要求 {need} / 我 {got}」渲染,
+        于是页面上显示成「薪资:要求 30 / 我 25-50K·15薪」:30 其实是**我的底线**,
+        25-50K 是**岗位给的**,字面读起来完全颠倒。模型读到的也是颠倒的。
+        经验和学历一直是对的,所以四项不一致 —— 这种错只在数值不同时才看得出来。
+        """
         items.append({"name": name, "verdict": verdict,
                       "need": need, "got": got, "note": note})
         if verdict == FAIL:
@@ -340,15 +348,15 @@ def gate(job: dict[str, Any], prefs: dict[str, Any]) -> dict[str, Any]:
     city = job.get("city")
     want_cities = prefs.get("cities") or []
     if rm:
-        add("city", NA, want_cities, city, f"远程/不限地点(原文「{rm.group()}」)")
+        add("city", NA, city, want_cities, f"远程/不限地点(原文「{rm.group()}」)")
     elif not city:
-        add("city", UNKNOWN, want_cities, None, "岗位没写城市")
+        add("city", UNKNOWN, None, want_cities, "岗位没写城市")
     elif not want_cities:
-        add("city", UNKNOWN, None, city, "我没填期望城市")
+        add("city", UNKNOWN, city, None, "我没填期望城市")
     elif any(w and w in city for w in want_cities):
-        add("city", PASS, want_cities, city)
+        add("city", PASS, city, want_cities)
     else:
-        add("city", FAIL, want_cities, city)
+        add("city", FAIL, city, want_cities)
 
     # ── ② 经验 ──
     lo, hi, form = parse_exp(job.get("experience"))
@@ -383,16 +391,16 @@ def gate(job: dict[str, Any], prefs: dict[str, Any]) -> dict[str, Any]:
     sv = salary_view(job)
     floor = prefs.get("salary_floor")
     if floor is None:
-        add("salary", UNKNOWN, None, sv["text"], "我没填薪资底线")
+        add("salary", UNKNOWN, sv["text"], None, "我没填薪资底线")
     elif sv["monthly_max"] is None:
-        add("salary", UNKNOWN, floor, sv["text"], "岗位没写薪资")
+        add("salary", UNKNOWN, None, floor, "岗位没写薪资")
     elif sv["monthly_max"] >= floor:
         # BOSS 的区间是可谈范围。用 min 判会把「20-50K」在 floor=30 时误判为不合格 ——
         # 而那明显是个够得到的岗位,只是要谈。
         stretch = sv["monthly_min"] is not None and sv["monthly_min"] < floor
-        add("salary", PASS, floor, sv["text"], "够得到但要谈" if stretch else "")
+        add("salary", PASS, sv["text"], f"底线 {floor}K", "够得到但要谈" if stretch else "")
     else:
-        add("salary", FAIL, floor, sv["text"])
+        add("salary", FAIL, sv["text"], f"底线 {floor}K")
 
     return {"pass": not fails, "hard_fail": fails, "hard_unknown": unknowns,
             "items": items, "parse_failures": parse_fail, "salary": sv,

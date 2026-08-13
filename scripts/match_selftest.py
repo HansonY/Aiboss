@@ -185,6 +185,22 @@ ok(ai.hashes({"jd": "abc2"}, M)[0] != ai.hashes(J, M)[0],
 ok(ai.hashes(J, {"resume": "xyz"})[1] == ai.hashes(J, M)[1],
    "  resume_raw 缺失时回落 resume,口径一致")
 
+# ── ★ 门槛卡的方向:need=岗位要求 / got=我的,四项必须一致 ──
+# 原来城市和薪资是反的(need 放我的期望),而 UI 和喂给模型的 C 段都按
+# 「要求 {need} / 我 {got}」渲染 —— 页面显示「薪资:要求 30 / 我 25-50K」,
+# 30 其实是我的底线。这种错只在两个值不同时才看得出来,所以必须有断言。
+GJ = {"title": "iOS", "city": "上海", "experience": "3-5年", "degree": "本科",
+      "salary_min": 25, "salary_max": 50, "salary_text": "25-50K·15薪", "jd": "职责"}
+gi = {i["name"]: i for i in bm.gate(GJ, ME)["items"]}
+ok(gi["city"]["need"] == "上海" and gi["city"]["got"] == ME["cities"],
+   "★ 城市:need=岗位城市,got=我的期望城市")
+ok(gi["salary"]["need"] == "25-50K·15薪" and "35" in str(gi["salary"]["got"]),
+   "★ 薪资:need=岗位薪资原文,got=我的底线")
+ok(gi["experience"]["need"] == "3-5年" and gi["experience"]["got"] == ME["years_exp"],
+   "  经验:need=岗位要求,got=我的年限")
+ok(gi["degree"]["need"] == "本科" and gi["degree"]["got"] == ME["degree"],
+   "  学历:need=岗位要求,got=我的学历")
+
 # ── 自定义关注点:换标准必须换缓存键(否则新旧尺子的分混在一起)──
 ok(ai.effective_ver({}) == ai.PROMPT_VER, "没设关注点 → 版本就是基础版本")
 ok(ai.effective_ver({"focus": "  "}) == ai.PROMPT_VER, "  空白关注点等于没设")
