@@ -483,8 +483,16 @@ async function load() {
     <div class="fact"><b>${st.jobs || 0}</b><span>已入库岗位</span></div>
     <div class="fact${st.jd_have ? ' on' : ''}"><b>${st.jd_have || 0}</b><span>有职位描述</span></div>
     <div class="fact${pend ? ' warn' : ''}"><b>${pend}</b><span>待提取页面</span></div>
-    <div class="fact${ix?.in_sync ? ' on' : ''}"><b>${vec}</b><span>向量${
+    <div class="fact${ix?.in_sync ? ' on' : ''}" title="${esc(ix?.log_tail || '')}"><b>${vec}</b><span>向量${
       ix && !ix.error && !ix.in_sync && !ix.syncing ? `(差 ${ix.pending || 0})` : ''}</span></div>`;
+  // 同步中就把子进程干到哪儿了显示出来 —— 首次要下 2.2GB 模型,
+  // 光一个「同步中…」会让人以为卡死
+  if (ix?.syncing) {
+    const t = ix.log_tail || '';
+    msg('#msg', /%\|/.test(t) || /Downloading|fetch/i.test(t)
+      ? `首次要下载向量模型(约 2.2GB,存 ~/.cache/huggingface,只下一次)…  ${t.slice(-60)}`
+      : (t ? `向量同步中:${t.slice(-70)}` : '向量同步中…'), '');
+  }
 
   $('#nJobs').textContent = st.jobs ? `(${st.jobs})` : '';
   // 过滤中不动列表(会把过滤结果冲掉);普通模式按内容指纹,变了才重画

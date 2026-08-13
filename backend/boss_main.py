@@ -865,7 +865,25 @@ async def index_status() -> dict[str, Any]:
     p = _INDEX_PROC.get("proc")
     s["syncing"] = p is not None and p.poll() is None
     s["last_kick"] = _INDEX_PROC.get("at")
+    # 子进程干到哪儿了 —— **首次同步会先下载 2.2GB 的向量模型**,
+    # 只显示「同步中…」的话新用户会以为卡死了(几分钟没动静)。
+    # 把日志最后一行带出去:HF 的下载进度条和我们的「嵌入 x/y」都在里面。
+    s["log_tail"] = _index_log_tail()
     return s
+
+
+def _index_log_tail() -> str:
+    """索引日志的最后一行。进度条用 \r 刷新,所以要按 \r 也切一刀。"""
+    f = ROOT / "logs" / "boss_index.log"
+    try:
+        with f.open("rb") as fh:
+            fh.seek(0, 2)
+            fh.seek(max(0, fh.tell() - 4000))
+            raw = fh.read().decode("utf-8", "replace")
+    except OSError:
+        return ""
+    lines = [ln.strip() for chunk in raw.splitlines() for ln in chunk.split("\r")]
+    return next((ln for ln in reversed(lines) if ln), "")[:160]
 
 
 @app.get("/api/boss/search")
