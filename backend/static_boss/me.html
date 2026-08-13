@@ -65,12 +65,28 @@
     <h1>我的简历</h1>
     <span class="pill" id="ai">AI …</span>
     <div class="sp">
+      <span class="pill" id="fbtn" style="cursor:pointer"
+        title="点开:自己定匹配标准(远程优先?技术深度?别推外包?)">自定义匹配 skill</span>
       <a class="lk" href="/match.html">看岗位匹配 →</a>
       <a class="lk" href="/">岗位库</a>
     </div>
   </div>
 
   <div class="scroll"><div class="wrap">
+
+    <div class="box" id="fcard" style="display:none;margin-bottom:16px">
+      <label style="display:block;font-size:11px;color:var(--dim2);margin-bottom:6px">
+        写在这儿的会**进匹配 prompt**:命中写进「能打动」、不满足写进「会被挑」,分数跟着变。
+        改不了机械核对的四项(城市/经验/学历/薪资),也改不掉「每条判断必须逐字引原文」。</label>
+      <textarea id="focus" style="min-height:88px"
+        placeholder="例:&#10;· 最在意能不能远程,现场坐班的直接降分&#10;· 更看重技术深度而不是什么都碰&#10;· 别给我推外包和驻场"></textarea>
+      <div class="row">
+        <button class="btn go" id="fsave">保存</button>
+        <button class="btn" id="freset">恢复默认</button>
+        <span class="pill" id="fst"></span>
+      </div>
+      <div class="msg" id="fmsg"></div>
+    </div>
 
     <h2>① 粘简历原文</h2>
     <p class="lead">**匹配分不从提取的字段算** —— 打分时,大模型拿到的是岗位原文全文 +
@@ -107,22 +123,6 @@
         </div>
       </div>
 
-      <h2>③ 我额外看重什么(可选,直接改匹配标准)</h2>
-      <p class="lead">写在这儿的东西会**进匹配 prompt**,模型打分时按它来:
-        命中写进「能打动」、不满足写进「会被挑」,`fit` 也跟着变。<br>
-        它**改不了机械核对的四项**(城市/经验/学历/薪资)—— 写「远程优先」不会让
-        城市不符变成符合。也改不掉「每条判断必须逐字引原文」那道校验。<br>
-        ⚠️ **改了它 = 换了一把尺子**,已有分数会退场(留在库里可对比),要重新分析才有新分。</p>
-      <div class="box">
-        <textarea id="focus" style="min-height:96px"
-          placeholder="例:&#10;· 我最在意能不能远程或混合,现场坐班的直接降分&#10;· 更看重技术深度(某一块做深)而不是什么都碰&#10;· 团队 5 人以内的加分,大厂流程重的减分&#10;· 别给我推外包和驻场"></textarea>
-        <div class="row">
-          <button class="btn go" id="fsave">存这条标准</button>
-          <span class="pill" id="fst"></span>
-        </div>
-        <div class="msg" id="fmsg"></div>
-      </div>
-
       <div id="extra"></div>
     </div>
 
@@ -135,7 +135,7 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"]/g,
   m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
 const bold = t => esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
-document.querySelectorAll('.lead').forEach(e => e.innerHTML = bold(e.textContent));
+document.querySelectorAll('.lead,#fcard label').forEach(e => e.innerHTML = bold(e.textContent));
 
 function msg(id, t, cls, ms) {
   const m = $(id);
@@ -236,7 +236,9 @@ function drawExtra(me) {
   if ((p.titles || []).length) parts.push(`<div class="sub"><label>做过的岗位</label>
     <p class="quote">${p.titles.map(esc).join(' · ')}</p></div>`);
   $('#extra').innerHTML = parts.length
-    ? `<h2>③ 提取备注</h2><div class="box" style="padding-top:2px">${parts.join('')}</div>` : '';
+    ? `<details style="margin-top:18px"><summary style="font-size:11.5px;color:var(--dim2);
+         cursor:pointer">③ 提取备注(年限依据 / 简历里写明的限制 / AI 说读不出来的)</summary>
+       <div class="box" style="margin-top:8px;padding-top:2px">${parts.join('')}</div></details>` : '';
 }
 
 async function load() {
@@ -266,28 +268,46 @@ async function load() {
   $('#focus').value = me.focus || '';
   FOCUS0 = me.focus || '';
   const mt = d.matches || {};
+  $('#fbtn').className = 'pill' + (me.focus ? ' have' : '');
+  $('#fbtn').textContent = me.focus ? '自定义匹配 skill ✓' : '自定义匹配 skill';
   $('#fst').className = 'pill' + (me.focus ? ' have' : '');
-  $('#fst').textContent = me.focus
-    ? `已生效 · 按当前标准算过 ${mt.current || 0} 个岗位`
-    : (mt.current ? `还没设 · 已按默认标准算过 ${mt.current} 个` : '还没设');
+  $('#fst').textContent = `按当前标准算过 ${mt.current || 0} 个岗位`;
   $('#fst').title = '口径版本 ' + (mt.prompt_ver || '');
 }
 
 let FOCUS0 = '';
+$('#fbtn').onclick = () => {
+  const c = $('#fcard');
+  const open = c.style.display === 'none';
+  c.style.display = open ? 'block' : 'none';
+  if (open) $('#focus').focus();
+};
+
+async function saveFocus(v) {
+  const d0 = await req('/api/boss/me');
+  const n = (d0.matches || {}).current || 0;
+  // 换尺子是有后果的动作 —— 已有分数会退场,必须问一次
+  if (n && !confirm(`换了匹配标准,已经算过的 ${n} 个分数会退场`
+      + `(仍留在库里可对比),要重新点「AI 分析匹配」才有新分。\n\n确定?`)) return false;
+  await req('/api/boss/me', {focus: v});
+  return true;
+}
+
+$('#freset').onclick = async () => {
+  if (!FOCUS0) { msg('#fmsg', '现在就是默认标准', '', 2500); return; }
+  const b = $('#freset'); b.disabled = true;
+  try { if (await saveFocus('')) { $('#focus').value = ''; msg('#fmsg', '已恢复默认标准', 'ok'); } }
+  catch (e) { msg('#fmsg', e.message, 'bad'); }
+  b.disabled = false; load();
+};
+
 $('#fsave').onclick = async () => {
   const v = $('#focus').value.trim();
   if (v === FOCUS0) { msg('#fmsg', '没有改动', '', 2500); return; }
-  // 换尺子是有后果的动作 —— 已有分数会退场,必须问一次
-  const d0 = await req('/api/boss/me');
-  const n = (d0.matches || {}).current || 0;
-  if (n && !confirm(`改了匹配标准之后,已经算过的 ${n} 个分数会退场`
-      + `(仍留在库里,可以对比新旧判断),要重新点「AI 分析匹配」才有新分。\n\n确定?`)) return;
   const b = $('#fsave'); b.disabled = true;
   try {
-    await req('/api/boss/me', {focus: v});
-    msg('#fmsg', v ? '已生效 —— 之后每次分析都会按这条标准判。'
-                   + (n ? ` 那 ${n} 个旧分数已退场,重新分析即可。` : '')
-                   : '已清空,回到默认标准。', 'ok');
+    if (await saveFocus(v))
+      msg('#fmsg', v ? '已生效 —— 之后每次分析都按这条标准判' : '已恢复默认标准', 'ok');
   } catch (e) { msg('#fmsg', e.message, 'bad'); }
   b.disabled = false; load();
 };
