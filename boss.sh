@@ -3,9 +3,10 @@
 #
 #   ./boss.sh                首次自动装环境,然后起服务 → http://localhost:8001
 #
-#   ./boss.sh index          给岗位片段建/补向量索引(零网络,本地 bge-m3)
+#   ./boss.sh index          给岗位片段建/补向量索引(本地 bge-m3 跑,数据不出机器;
+#                            ⚠️ 首次会从 HuggingFace 下载约 2.2GB 模型权重)
 #   ./boss.sh index-status   只看索引现状,不加载模型
-#   ./boss.sh find <关键词>   命令行语义检索(全在本地,不需要任何 key)
+#   ./boss.sh find <关键词>   命令行语义检索(本地算,不需要 LLM key;首次同上要下模型)
 #   ./boss.sh ask  <问题>     基于岗位库回答,强制带出处(要 LLM key)
 #   ./boss.sh llmtest        测当前 AI 配置通不通(配完必跑)
 #   ./boss.sh llmsniff       不知道 key 是哪家的?挨个试一遍
