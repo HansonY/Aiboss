@@ -128,7 +128,8 @@ flowchart LR
 <img src="docs/img/feishu.png" alt="飞书二维码" width="230">
 
 也欢迎直接开 [Issue](https://github.com/HansonY/Aiboss/issues) —— 使用上的坑、
-想加的功能、觉得哪个判断不对，都可以说。
+想加的功能、觉得哪个判断不对，都可以说。想提 PR 见 [CONTRIBUTING.md](CONTRIBUTING.md)
+（`main` 有保护，走 fork + PR；CI 会自动跑 91 条口径自检）。
 
 ---
 

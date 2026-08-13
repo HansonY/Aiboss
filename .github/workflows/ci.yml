@@ -1,0 +1,42 @@
+name: CI
+
+# PR 和推 main 时跑。**刻意只装 httpx + pydantic-settings**(约 26MB)——
+# 口径自检和不变量检查零网络、零模型,装 sentence-transformers 会为了跑几秒的断言
+# 先下 1GB 的 torch,那是浪费。真要跑向量的那部分本来也不该在 CI 里跑。
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'      # 守卫认 3.10–3.13
+
+      - name: 装最小依赖
+        run: pip install -q httpx pydantic-settings
+
+      - name: 口径自检(91 条断言,零网络零模型)
+        run: python scripts/match_selftest.py
+
+      - name: 不变量:向量内核不许认识业务表
+        run: python scripts/kb_invariants.py
+
+      - name: Python 全量编译
+        run: python -m compileall -q backend scripts
+
+      - name: 插件 JS 语法
+        run: for f in extension/*.js; do node --check "$f"; done
+
+      - name: 不许有数据/密钥进仓库
+        run: |
+          # data/ 和 .env 是每个人自己的东西,一旦被跟踪就是把别人的简历和 key 提上来
+          if git ls-files | grep -E '^\.env$|^data/|\.db$'; then
+            echo "::error::仓库里出现了数据或密钥文件"; exit 1
+          fi
+          echo "✓ 没有数据/密钥被跟踪"
