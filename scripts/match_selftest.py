@@ -185,6 +185,22 @@ ok(ai.hashes({"jd": "abc2"}, M)[0] != ai.hashes(J, M)[0],
 ok(ai.hashes(J, {"resume": "xyz"})[1] == ai.hashes(J, M)[1],
    "  resume_raw 缺失时回落 resume,口径一致")
 
+# ── 自定义关注点:换标准必须换缓存键(否则新旧尺子的分混在一起)──
+ok(ai.effective_ver({}) == ai.PROMPT_VER, "没设关注点 → 版本就是基础版本")
+ok(ai.effective_ver({"focus": "  "}) == ai.PROMPT_VER, "  空白关注点等于没设")
+v1 = ai.effective_ver({"focus": "看重远程"})
+v2 = ai.effective_ver({"focus": "看重技术深度"})
+ok(v1 != ai.PROMPT_VER and v2 != ai.PROMPT_VER and v1 != v2,
+   "★ 不同关注点 → 不同版本(旧分数自然退场,不会拿两把尺子的分混排)")
+ok(ai.effective_ver({"focus": "看重远程"}) == v1, "  同一关注点版本稳定(缓存能命中)")
+# D 段只在设了关注点时出现,且不动机械核对
+F = {"hard_fail": [], "gate_items": [], "remote": False, "salary": {}}
+ctx0 = ai.build_context({"title": "x", "jd": "y"}, {"resume_raw": "z"}, F)
+ctx1 = ai.build_context({"title": "x", "jd": "y"}, {"resume_raw": "z", "focus": "看重远程"}, F)
+ok("【D 我额外看重的" not in ctx0, "没设关注点 → 不拼 D 段")
+ok("【D 我额外看重的" in ctx1 and "看重远程" in ctx1, "★ 设了就进 prompt 的 D 段")
+ok("不要推翻,不要重判" in ctx1, "  C 段的「不许推翻」仍在(自定义改不了机械核对)")
+
 bad = [x for x in R if not x[0]]
 for good, label in R:
     print(("  ✓ " if good else "  ✗ ") + label)

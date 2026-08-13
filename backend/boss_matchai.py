@@ -35,6 +35,20 @@ import llm
 # 且上线经验」),而等价经历恰恰是技能匹配里最值钱的判断。机械核对只留四个硬门槛。
 PROMPT_VER = "match2"
 
+
+def effective_ver(me: dict[str, Any] | None) -> str:
+    """当前生效的 prompt 版本 = 基础版本 + 你自定义关注点的指纹。
+
+    **为什么要把自定义关注点并进缓存键。** 你改了「额外看重什么」,模型的判断口径
+    就变了 —— 旧分数和新分数不是同一把尺子量的。不并进键的话:改完偏好,
+    页面上还显示着旧分,而且你**看不出它是旧的**;并进去之后,旧分自然从列表里
+    退场(仍留在库里,可以 join 出「哪些岗位的判断变了」),重新点一次分析就是新尺子。
+
+    ⚠️ 这也意味着**改一次关注点 = 已有分数全部需要重跑**。页面上必须说清这件事。
+    """
+    focus = ((me or {}).get("focus") or "").strip()
+    return PROMPT_VER if not focus else f"{PROMPT_VER}+f{_hash(focus)[:8]}"
+
 PROMPT = """你在帮一个求职者判断「这个岗位和我的简历匹配到什么程度」。
 
 我会给你三样东西:
@@ -66,7 +80,10 @@ PROMPT = """你在帮一个求职者判断「这个岗位和我的简历匹配�
    ⚠️ **C 里有硬门槛判「不符合」时,不许给 `worth`**(最多 `maybe`),
    而且必须在 `risks` 里把那一项写出来。薪资上界低于我的底线、城市不符 ——
    这些是核对出来的事实,给「值得投」等于让我去投一个明知不合的岗位。
-9. **不要写客套话、不要写「祝你好运」、不要复述岗位描述。** 中文,简洁。
+9. 如果我给了 **D 我额外看重的**,请在判断里体现它:命中就写进 `highlights`、
+   不满足就写进 `risks`,并让 `fit` 反映它的权重。
+   ⚠️ 但它**不能推翻 C**:我说「远程优先」也不代表城市不符就变成符合。
+10. **不要写客套话、不要写「祝你好运」、不要复述岗位描述。** 中文,简洁。
 
 只输出 JSON,不要解释、不要代码块围栏:
 {"fit":0,"fit_why":"","verdict":"maybe",
@@ -209,12 +226,20 @@ def build_context(job: dict[str, Any], me: dict[str, Any],
 简历正文:
 {(me.get('resume_raw') or me.get('resume') or '(没有简历原文)')[:6000]}"""
 
+    # D 段:用户自己写的关注点。**只加在这里,不动 PROMPT 的机械规则** ——
+    # quote 逐字校验、C 段不可推翻、硬门槛 fail 不给 worth 这几条是这套东西可信的
+    # 地基,让人随手改掉的话,输出会看着更顺眼而实际更不可靠(比如去掉引用要求,
+    # 幻觉就直接进结果了)。所以可改的是**判断标准**,不是**校验机制**。
+    focus = (me.get("focus") or "").strip()
+    D = f"""【D 我额外看重的 —— 请在判断里体现,但不能推翻 C】
+{focus[:1200]}""" if focus else ""
+
     C = f"""【C 程序已机械核对的硬门槛 —— 不要推翻,不要重判】
 结论:{'四项全过' if facts.get('gate_pass') else '有不符合项'}
 {chr(10).join(gate_lines)}
 远程/不限地点:{'是' if facts.get('remote') else '否/未写明'}
 岗位状态:{'已关闭' if job.get('job_state') == 'closed' else '未标记关闭'}"""
-    return "\n\n".join((A, B, C))
+    return "\n\n".join(x for x in (A, B, C, D) if x)
 
 
 def analyze(job: dict[str, Any], me: dict[str, Any],
@@ -273,7 +298,8 @@ def analyze(job: dict[str, Any], me: dict[str, Any],
         "quote_miss": miss_n,
         "quote_total": total_claims,
         "model": llm.fast_model(),
-        "prompt_ver": PROMPT_VER,
+        # 落库存**生效版本**(含关注点指纹),否则查缓存永远对不上
+        "prompt_ver": effective_ver(me),
         # 和路由查缓存用的**同一个函数**,见 hashes() 的注释
         "jd_hash": jd_h,
         "resume_hash": res_h,

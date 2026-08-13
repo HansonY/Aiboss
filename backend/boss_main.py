@@ -403,7 +403,7 @@ async def list_jobs(limit: int = Query(30, ge=1, le=200)) -> dict[str, Any]:
             "FROM jobs j LEFT JOIN job_match m "
             "  ON m.job_id = j.job_id AND m.prompt_ver = ? "
             "ORDER BY j.updated_at DESC LIMIT ?",
-            (boss_matchai.PROMPT_VER, limit))]
+            (_ver(), limit))]
         total = c.execute("SELECT COUNT(*) n FROM jobs").fetchone()["n"]
     pend = len(list(PENDING_DIR.glob("*.json"))) if PENDING_DIR.exists() else 0
     return {"items": rows, "total": total, "pending": pend}
@@ -586,8 +586,14 @@ async def get_me() -> dict[str, Any]:
     """
     import llm as _llm
     me = bs.get_me()
+    with bs.connect() as c:
+        n_cur = c.execute("SELECT COUNT(*) n FROM job_match WHERE prompt_ver=?",
+                          (_ver(me),)).fetchone()["n"]
+        n_all = c.execute("SELECT COUNT(*) n FROM job_match").fetchone()["n"]
     return {
         "me": me,
+        # 改关注点会让旧分数退场 —— 页面要能说清「会失效几个」
+        "matches": {"current": n_cur, "total": n_all, "prompt_ver": _ver(me)},
         # 勾选项的枚举**从 boss_match 拿**,不在前端写一份 ——
         # 两份枚举不一致不会报错,只是隐性要求那一层永远匹配不上。
         "axes": [{"key": k, "label": v} for k, v in bm.AXES],
@@ -636,7 +642,7 @@ async def parse_resume(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
 async def save_me(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
     """存手改后的生效值。白名单字段,类型在这里兜住。"""
     d: dict[str, Any] = {}
-    for k in ("resume", "degree"):
+    for k in ("resume", "degree", "focus"):
         if k in body:
             d[k] = str(body[k] or "") or None
     for k in ("skills", "cities", "avoid", "want_axes"):
@@ -659,6 +665,16 @@ async def save_me(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
     return {"me": me, "saved": sorted(d)}
 
 
+def _ver(me: dict[str, Any] | None = None) -> str:
+    """当前生效的 prompt 版本。**所有查/写匹配缓存的地方都必须走这里。**
+
+    它含用户自定义关注点的指纹(见 boss_matchai.effective_ver)。9 处调用点各写一份
+    `boss_matchai.PROMPT_VER` 的话,漏改任何一处的表现是「缓存永远查不中」——
+    每次点都重新花钱,而且不报错。
+    """
+    return boss_matchai.effective_ver(me if me is not None else bs.get_me())
+
+
 def _facts(job: dict[str, Any], me: dict[str, Any]) -> dict[str, Any]:
     return boss_matchai.facts_for(job, me)
 
@@ -678,7 +694,7 @@ async def match_get(job_id: str) -> dict[str, Any]:
         return {"error": "还没录简历。先到「我的简历」页粘一份。", "need_me": True}
     facts = _facts(job, me)
     jh, rh = boss_matchai.hashes(job, me)
-    cached = bs.get_match(job_id, boss_matchai.PROMPT_VER, jh, rh)
+    cached = bs.get_match(job_id, _ver(me), jh, rh)
     return {"job": {k: job.get(k) for k in
                     ("job_id", "title", "company", "city", "district", "salary_text",
                      "experience", "degree", "jd", "jd_state", "job_state", "url")},
@@ -702,7 +718,7 @@ async def match_run(job_id: str, force: bool = Query(False)) -> dict[str, Any]:
     jh, rh = boss_matchai.hashes(job, me)
     facts = _facts(job, me)
     if not force:
-        c = bs.get_match(job_id, boss_matchai.PROMPT_VER, jh, rh)
+        c = bs.get_match(job_id, _ver(me), jh, rh)
         if c:
             return {"ai": c["detail"].get("ai"), "facts": facts,
                     "cached": True, "ai_at": c["computed_at"]}
@@ -761,7 +777,7 @@ async def page_state(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
         facts = _facts(job, me)
         out["facts_brief"] = _facts_brief(facts)
         jh, rh = boss_matchai.hashes(job, me)
-        c = bs.get_match(jid, boss_matchai.PROMPT_VER, jh, rh)
+        c = bs.get_match(jid, _ver(me), jh, rh)
         if c:
             out["match"] = c["detail"].get("ai")
             out["match_at"] = c["computed_at"]
@@ -808,7 +824,7 @@ async def page_analyze(body: dict[str, Any] = Body(...),
     job = bs.get_job(jid)
     facts = _facts(job, me)
     jh, rh = boss_matchai.hashes(job, me)
-    cached = None if force else bs.get_match(jid, boss_matchai.PROMPT_VER, jh, rh)
+    cached = None if force else bs.get_match(jid, _ver(me), jh, rh)
     if cached:
         ai_res = cached["detail"].get("ai")
     else:
@@ -907,7 +923,7 @@ async def search(q: str = Query(..., min_length=1),
             fits = {row["job_id"]: dict(row) for row in c.execute(
                 f"SELECT job_id, fit, verdict FROM job_match "
                 f"WHERE prompt_ver=? AND job_id IN ({','.join('?' * len(ids))})",
-                [boss_matchai.PROMPT_VER, *ids])}
+                [_ver(), *ids])}
         for h in (r.get("good") or []) + (r.get("maybe") or []):
             m = fits.get(h.get("job_id"))
             h["fit"] = m["fit"] if m else None
@@ -986,7 +1002,7 @@ async def job_detail(job_id: str) -> dict[str, Any]:
         m = c.execute(
             "SELECT fit, verdict, computed_at FROM job_match "
             "WHERE job_id=? AND prompt_ver=?",
-            (job_id, boss_matchai.PROMPT_VER)).fetchone()
+            (job_id, _ver())).fetchone()
         ints = [dict(r) for r in c.execute(
             "SELECT kind, status, note FROM interactions WHERE job_id=?", (job_id,))]
     return {"job": job, "match": dict(m) if m else None, "interactions": ints}
@@ -999,11 +1015,11 @@ async def match_list(limit: int = Query(100, ge=1, le=300)) -> dict[str, Any]:
     ⚠️ `fit` 是**模型给的(inferred)**,不是算出来的。规则层的排序键是另一回事
     (还没校准,见计划 §四)。这里不混在一起排。
     """
-    rows = bs.list_matches(boss_matchai.PROMPT_VER, limit)
+    rows = bs.list_matches(_ver(), limit)
     with bs.connect() as c:
         total = c.execute("SELECT COUNT(*) n FROM jobs").fetchone()["n"]
     return {"items": rows, "analyzed": len(rows), "total_jobs": total,
-            "prompt_ver": boss_matchai.PROMPT_VER}
+            "prompt_ver": _ver()}
 
 
 # ── AI 模型设置(自带,不依赖别的服务)────────────────────────

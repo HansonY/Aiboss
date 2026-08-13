@@ -167,6 +167,9 @@ def _add_missing_columns(conn: sqlite3.Connection) -> None:
             "edited_at": "TEXT", "years_exp": "REAL", "degree": "TEXT",
             "cities": "TEXT", "salary_floor": "INTEGER", "salary_want": "INTEGER",
             "avoid": "TEXT", "want_axes": "TEXT",
+            # 我额外看重什么(自由文本)。进匹配 prompt 的 D 段,
+            # 并且它的指纹进缓存键 —— 改了口径,旧分数自然失效。
+            "focus": "TEXT",
         },
     }
     for table, cols in wanted.items():
@@ -373,7 +376,7 @@ def save_interaction(job_id: str, kind: str, status: str = "unknown",
 # ── 我的画像(简历 + 求职偏好)────────────────────────────────
 
 _ME_FIELDS = ("resume", "skills", "years_exp", "degree", "cities",
-              "salary_floor", "salary_want", "avoid", "want_axes")
+              "salary_floor", "salary_want", "avoid", "want_axes", "focus")
 _ME_JSON = ("skills", "cities", "avoid", "want_axes")
 
 

@@ -178,6 +178,9 @@ CREATE TABLE IF NOT EXISTS me (
     salary_want  INTEGER,              -- 千元/月。理想值,只进排序不做门槛
     avoid        TEXT,                 -- JSON 数组:不接受什么(现场坐班/出差/大小周…)
     want_axes    TEXT,                 -- JSON 数组:想要什么
+    -- 我额外看重什么(自由文本,进匹配 prompt 的 D 段)。
+    -- 它的指纹进 job_match 的 prompt_ver —— 改了标准,旧分数自然失效、需重跑。
+    focus        TEXT,
     -- ⚠️ avoid / want_axes 的取值必须和 boss_match.AXES 是**同一张枚举** ——
     -- 不然 JD 隐性要求那一层算出来的 clash 永远匹配不上,而且不会报错,
     -- 只是永远显示「没有冲突」。

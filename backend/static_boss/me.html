@@ -107,6 +107,22 @@
         </div>
       </div>
 
+      <h2>③ 我额外看重什么(可选,直接改匹配标准)</h2>
+      <p class="lead">写在这儿的东西会**进匹配 prompt**,模型打分时按它来:
+        命中写进「能打动」、不满足写进「会被挑」,`fit` 也跟着变。<br>
+        它**改不了机械核对的四项**(城市/经验/学历/薪资)—— 写「远程优先」不会让
+        城市不符变成符合。也改不掉「每条判断必须逐字引原文」那道校验。<br>
+        ⚠️ **改了它 = 换了一把尺子**,已有分数会退场(留在库里可对比),要重新分析才有新分。</p>
+      <div class="box">
+        <textarea id="focus" style="min-height:96px"
+          placeholder="例:&#10;· 我最在意能不能远程或混合,现场坐班的直接降分&#10;· 更看重技术深度(某一块做深)而不是什么都碰&#10;· 团队 5 人以内的加分,大厂流程重的减分&#10;· 别给我推外包和驻场"></textarea>
+        <div class="row">
+          <button class="btn go" id="fsave">存这条标准</button>
+          <span class="pill" id="fst"></span>
+        </div>
+        <div class="msg" id="fmsg"></div>
+      </div>
+
       <div id="extra"></div>
     </div>
 
@@ -245,7 +261,36 @@ async function load() {
   AVOID = (me.avoid || []).slice();
   $('#review').style.display = 'block';
   drawKv(me); drawSkills(me); drawAvoid(); drawExtra(me);
+
+  // ③ 我额外看重什么
+  $('#focus').value = me.focus || '';
+  FOCUS0 = me.focus || '';
+  const mt = d.matches || {};
+  $('#fst').className = 'pill' + (me.focus ? ' have' : '');
+  $('#fst').textContent = me.focus
+    ? `已生效 · 按当前标准算过 ${mt.current || 0} 个岗位`
+    : (mt.current ? `还没设 · 已按默认标准算过 ${mt.current} 个` : '还没设');
+  $('#fst').title = '口径版本 ' + (mt.prompt_ver || '');
 }
+
+let FOCUS0 = '';
+$('#fsave').onclick = async () => {
+  const v = $('#focus').value.trim();
+  if (v === FOCUS0) { msg('#fmsg', '没有改动', '', 2500); return; }
+  // 换尺子是有后果的动作 —— 已有分数会退场,必须问一次
+  const d0 = await req('/api/boss/me');
+  const n = (d0.matches || {}).current || 0;
+  if (n && !confirm(`改了匹配标准之后,已经算过的 ${n} 个分数会退场`
+      + `(仍留在库里,可以对比新旧判断),要重新点「AI 分析匹配」才有新分。\n\n确定?`)) return;
+  const b = $('#fsave'); b.disabled = true;
+  try {
+    await req('/api/boss/me', {focus: v});
+    msg('#fmsg', v ? '已生效 —— 之后每次分析都会按这条标准判。'
+                   + (n ? ` 那 ${n} 个旧分数已退场,重新分析即可。` : '')
+                   : '已清空,回到默认标准。', 'ok');
+  } catch (e) { msg('#fmsg', e.message, 'bad'); }
+  b.disabled = false; load();
+};
 
 $('#parse').onclick = async () => {
   const text = $('#raw').value.trim();
