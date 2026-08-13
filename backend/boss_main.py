@@ -44,12 +44,17 @@ CAPTURE_DIR = ROOT / "data" / "boss_capture"
 
 app = FastAPI(title="Aiboss", version="0.1.0")
 
-# 插件的 content script 跑在 zhipin.com 源上,要往 localhost 发 —— 必须放行。
-# 只放行这一个用途,不是全站开放。
+# ⚠️ **不放行 zhipin.com。** 这里以前把它加进白名单,理由是「content script 要往
+# localhost 发」—— 那个架构早就没了:插件的所有 localhost 请求都发自
+# 侧边栏/service worker(chrome-extension:// 源),靠 manifest 的 host_permissions
+# 直接豁免 CORS,不经过这个中间件。
+#
+# 而这个接口**没有任何鉴权**,/api/boss/me 会返回简历原文全文。放行 zhipin.com
+# 等于允许那个站(以及站上任何第三方脚本)跨源读走你的简历和求职记录、
+# 改掉你的 API key、触发付费提取。所以只留同源的本机页面。
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://www.zhipin.com", "https://zhipin.com",
-                   "http://localhost:8001", "http://127.0.0.1:8001"],
+    allow_origins=["http://localhost:8001", "http://127.0.0.1:8001"],
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
@@ -59,6 +64,10 @@ app.add_middleware(
 def _startup() -> None:
     bs.init_db()
     CAPTURE_DIR.mkdir(parents=True, exist_ok=True)
+    # logs/ 被 gitignore,所以 fresh clone 里它不存在 —— 而 _index_kick 往
+    # logs/boss_index.log 追加日志。不建的话新用户第一次点「提取」就 500:
+    # 岗位已入库、队列已清空,却报「出错」,而且向量永远不同步。
+    (ROOT / "logs").mkdir(parents=True, exist_ok=True)
 
 
 @app.get("/api/boss/health")
@@ -241,16 +250,24 @@ async def do_extract(
             failed.append(f"{type(e).__name__}: {str(e)[:90]}")
             continue
 
+        done_pages = []
         for item in got:
             page = batch[item["idx"]]
             new_n, upd_n, ids = _ingest_jobs(page, item["jobs"])
             saved += new_n
             skipped += upd_n
             _map_page_to_job(page, ids)
-        # 这一批处理完了,从队列移除
+            done_pages.append(page)
+        # **只删模型真的处理了的页面。** 原来是整批照删 —— 而 extract_batch 会
+        # 丢掉模型没回 idx 的页面、_clean 会丢掉无标题的岗位:那些页面 0 入库
+        # 却也被删掉,原文再也拿不回来(只能重新去 BOSS 浏览一遍),
+        # 直接违背本路由「失败的留着」这句承诺。
         for p_ in batch:
-            idx = pages.index(p_)
-            keep[idx].unlink(missing_ok=True)
+            if p_ in done_pages:
+                keep[pages.index(p_)].unlink(missing_ok=True)
+        left = len(batch) - len(done_pages)
+        if left:
+            failed.append(f"{left} 页模型没返回结果,已留在队列里等下次")
 
     st = bs.stats()
     # 提取完顺手把向量补上 —— 「清洗 → 入库 → 向量」一条线走完,
@@ -470,6 +487,27 @@ async def pending(limit: int = Query(60, ge=1, le=300)) -> dict[str, Any]:
     return {"items": out, "total": len(files)}
 
 
+@app.get("/api/boss/pending/{key}")
+async def pending_text(key: str) -> dict[str, Any]:
+    """一条待提取页面的原文 —— 提取前先看一眼,自己判断值不值得花这次调用。
+
+    ⚠️ key 来自客户端,**必须只当文件名用**:Path(key).name 剥掉任何路径成分,
+    再确认解析后的父目录就是 PENDING_DIR —— 否则 `../../.env` 这种 key
+    就能读走本机任意文件。
+    """
+    if not PENDING_DIR.exists():
+        return {"error": "队列是空的"}
+    f = (PENDING_DIR / f"{Path(str(key)).name}.json").resolve()
+    if f.parent != PENDING_DIR.resolve() or not f.exists():
+        return {"error": "这一页已经不在队列里了(可能刚被提取)"}
+    try:
+        d = json.loads(f.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        return {"error": f"读不出来:{type(e).__name__}"}
+    return {"key": f.stem, "title": d.get("title"), "url": d.get("url"),
+            "kind": d.get("kind"), "at": d.get("at"), "text": d.get("text") or ""}
+
+
 @app.post("/api/boss/known")
 async def known(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
     """这批链接里,哪些已经存过了。
@@ -577,7 +615,10 @@ async def parse_resume(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
                          "确认要换的话再提交一次(会替换,旧的不留备份)。",
                 "needs_confirm": True, "old_chars": len(old["resume_raw"])}
     try:
-        r = boss_resume.parse(text)
+        # ⚠️ **必须 to_thread。** 这是唯一还在事件循环上同步跑 LLM 的路由:
+        # 一次调用最长 180 秒,期间所有页面的轮询、插件面板、/health 全部排队 ——
+        # 用户感受就是「点一下抽简历,整个站卡死」。
+        r = await asyncio.to_thread(boss_resume.parse, text)
     except (ValueError, RuntimeError) as e:
         return {"error": str(e)}
     except Exception as e:                       # noqa: BLE001  LLM 侧各种异常
@@ -1023,7 +1064,14 @@ async def post_settings(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
         if target and target in _EDITABLE:
             body[target] = body.pop("LLM_API_KEY")
 
-    updates = {k: str(v) for k, v in body.items()
+    # ⚠️ **必须剥掉换行。** 不剥的话 {"LLM_MODEL": "x\nLLM_BASE_URL=http://evil"}
+    # 会在 .env 里多写一行,越过 _EDITABLE 白名单注入任意配置 ——
+    # 而 LLM_BASE_URL 一被改,之后每次匹配都把「JD + 简历全文」发到别人的端点。
+    # 白名单管住了「能写哪些键」,这一步管住「值里不能藏新键」。
+    def _clean_val(v: Any) -> str:
+        return str(v).replace("\r", " ").replace("\n", " ").strip()
+
+    updates = {k: _clean_val(v) for k, v in body.items()
                if k in _EDITABLE and v is not None}
     if not updates:
         return {"error": f"没有可写的键。可写:{sorted(_EDITABLE)}"}

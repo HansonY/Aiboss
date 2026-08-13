@@ -11,14 +11,20 @@
  .top h1{margin:0;font-size:15px;font-weight:600}
  .top .dbp{font-family:var(--mono);font-size:10.5px;color:var(--dim2)}
  .top .sp{margin-left:auto;display:flex;gap:12px;align-items:center}
- .scroll{flex:1 1 auto;overflow-y:auto;padding:22px 24px 70px}
- .wrap{max-width:1080px;margin:0 auto}
+ /* ⚠️ 页面本身**不滚**。之前是「页面滚 + 左列表滚(6699px) + 右内容滚」
+    三层嵌套,鼠标在左列表上滚到底就会把外层页面一起带走 ——
+    手感发黏、像卡住。现在只有左右两栏各自滚,一个位置只有一个滚动容器。 */
+ .scroll{flex:1 1 auto;display:flex;flex-direction:column;min-height:0;
+   padding:14px 20px 0;overflow:hidden}
+ .wrap{max-width:1180px;margin:0 auto;width:100%;flex:1 1 auto;
+   display:flex;flex-direction:column;min-height:0}
  h2{font-size:12px;font-weight:600;color:var(--dim);letter-spacing:.4px;margin:26px 0 4px}
  h2:first-of-type{margin-top:0}
  .lead{font-size:11.5px;color:var(--dim2);line-height:1.65;margin:0 0 12px}
- .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:4px}
- .fact{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 14px}
- .fact b{display:block;font-family:var(--mono);font-size:21px;font-weight:600;color:var(--fg);line-height:1.1}
+ .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;
+   margin-bottom:10px;flex:0 0 auto}
+ .fact{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:8px 12px}
+ .fact b{display:block;font-family:var(--mono);font-size:17px;font-weight:600;color:var(--fg);line-height:1.15}
  .fact span{font-size:10.5px;color:var(--dim2)}
  .fact.warn{border-color:var(--warn-line);background:var(--warn-dim)}
  .fact.warn b{color:var(--warn-text)}
@@ -50,8 +56,15 @@
  a.lk:hover{text-decoration:underline}
 
  /* ── 岗位库:左列表 + 右内容 ── */
- .lib{display:flex;height:620px}
- .lb-l{flex:0 0 330px;display:flex;flex-direction:column;border-right:1px solid var(--line);min-width:0}
+ .lib{display:flex;flex:1 1 auto;min-height:0;margin-bottom:12px}
+ .lb-l{flex:0 0 320px;display:flex;flex-direction:column;border-right:1px solid var(--line);min-width:0}
+ /* 左栏两个标签:岗位 / 待提取 —— 待提取从页面下方搬进来,页面因此不用滚 */
+ .tabs{display:flex;border-bottom:1px solid var(--line);background:#0f1217;flex:0 0 auto}
+ .tabs button{flex:1;width:auto;text-align:center;background:transparent;border:0;
+   border-bottom:2px solid transparent;border-radius:0;padding:9px 6px;margin:0;
+   color:var(--dim2);font-size:11.5px;cursor:pointer}
+ .tabs button.on{color:var(--accent-text);border-bottom-color:var(--accent)}
+ .tabs button:hover:not(.on){color:var(--dim)}
  .lsearch{display:flex;gap:6px;padding:10px;border-bottom:1px solid var(--line);background:#0f1217}
  .lsearch input{flex:1;min-width:0;background:var(--bg);color:var(--fg);border:1px solid var(--line);
    border-radius:8px;padding:7px 10px;font-size:12px;font-family:inherit}
@@ -134,17 +147,28 @@
       <div class="msg" id="amsg" style="margin-top:10px"></div>
     </div>
 
-    <h2>岗位库</h2>
-    <p class="lead">左边挑,右边看。搜索框是**语义过滤**:「远程的 AI 岗」「要音视频经验的」
-      按意思筛这个库(第一次要加载本地向量模型,约 10 秒);清空就回到全部。</p>
+    <p class="lead" style="margin:0 0 8px;flex:0 0 auto">左边挑、右边看 ——
+      搜索框是**语义过滤**(按意思筛,不是关键词);「待提取」标签里勾选后点提取,
+      清洗完自动转向量。<span id="msgline"></span></p>
     <div class="box lib">
       <div class="lb-l">
-        <div class="lsearch">
+        <div class="tabs">
+          <button id="tabJobs" class="on">岗位 <span id="nJobs"></span></button>
+          <button id="tabPend">待提取 <span id="nPend"></span></button>
+        </div>
+        <div class="lsearch" id="searchbar">
           <input id="q" placeholder="语义过滤:远程 AI 岗 / 要音视频的…">
           <button class="btn go" id="qgo">过滤</button>
         </div>
         <div class="lnote" id="lnote"></div>
         <div class="jlist" id="jlist"><div class="empty">读取中…</div></div>
+        <!-- 待提取的操作条:切到那个标签才出现 -->
+        <div class="bar" id="pbar" style="display:none;border-top:1px solid var(--line);border-bottom:0">
+          <label style="font-size:11px;color:var(--dim);display:flex;gap:5px;align-items:center">
+            <input type="checkbox" id="ckall" checked> 全选</label>
+          <button class="btn go" id="extract" style="margin-left:auto;padding:6px 10px;font-size:11.5px">提取</button>
+          <span class="eta" id="eta" style="flex:0 0 100%"></span>
+        </div>
       </div>
       <div class="lb-r" id="jpane">
         <div class="empty">左边挑一个岗位,这里显示清洗后的全部内容。<br>
@@ -152,20 +176,6 @@
       </div>
     </div>
 
-    <h2>待提取(先清洗,再进库)</h2>
-    <p class="lead">插件存进来的是**页面原文**,要先让 AI 清洗:滤掉导航噪音、
-      抽出结构(岗位/公司/薪资/JD)+ 归纳特征(办公方式/领域/技术主线)。
-      勾选要提取的 —— 提取完**自动转向量**,不用再点。</p>
-    <div class="box">
-      <div class="bar" id="pbar" style="display:none">
-        <label style="font-size:11.5px;color:var(--dim);display:flex;gap:5px;align-items:center">
-          <input type="checkbox" id="ckall" checked> 全选</label>
-        <span class="eta" id="eta"></span>
-        <button class="btn go" id="extract" style="margin-left:auto">提取</button>
-      </div>
-      <table id="pend"><tr><td class="empty">读取中…</td></tr></table>
-    </div>
-    <div class="msg" id="msg"></div>
   </div></div>
 </div>
 
@@ -178,6 +188,14 @@ const bold = t => esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
 document.querySelectorAll('.lead').forEach(e => e.innerHTML = bold(e.textContent));
 
 function msg(id, t, cls) {
+  // #msg 那块已经从页面上撤了(页面不滚,没地方摆)——提取的结果写到标题行
+  if (id === '#msg') {
+    const line = $('#msgline');
+    if (line) {
+      line.innerHTML = t ? ' · <b style="color:var(--' + (cls === 'bad' ? 'warn-text' : cls === 'ok' ? 'ok' : 'dim') + ')">' + bold(t) + '</b>' : '';
+    }
+    return;
+  }
   const m = $(id);
   m.style.display = t ? 'block' : 'none';
   m.className = 'msg ' + (cls || ''); m.innerHTML = bold(t || '');
@@ -318,11 +336,72 @@ async function doFilter() {
 $('#qgo').onclick = doFilter;
 $('#q').onkeydown = e => { if (e.key === 'Enter') doFilter(); };
 
-/* ══ 待提取:勾选 + ETA ══════════════════════════════════ */
-let PEND = [];
+/* ══ 待提取:进左栏标签,列表区共用 ══════════════════════ */
+let PEND = [], TAB = 'jobs';
+
+function setTab(t) {
+  TAB = t;
+  $('#tabJobs').classList.toggle('on', t === 'jobs');
+  $('#tabPend').classList.toggle('on', t === 'pend');
+  $('#searchbar').style.display = t === 'jobs' ? 'flex' : 'none';
+  $('#pbar').style.display = (t === 'pend' && PEND.length) ? 'flex' : 'none';
+  $('#lnote').innerHTML = '';
+  if (t === 'jobs') { listSig = ''; load(); }
+  else drawPendList();
+  $('#jpane').innerHTML = `<div class="empty">${t === 'jobs'
+    ? '左边挑一个岗位,这里显示清洗后的全部内容。'
+    : '这些是插件存进来的**页面原文**,还没让 AI 清洗。<br>点一条看原文;勾选后点「提取」。'}</div>`;
+  $('#jpane .empty').innerHTML = $('#jpane .empty').innerHTML.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+}
+$('#tabJobs').onclick = () => setTab('jobs');
+$('#tabPend').onclick = () => setTab('pend');
+
+/* 待提取列表:和岗位列表长一样,复用同一个滚动区 */
+function drawPendList() {
+  const KIND = {detail: '岗位详情', list: '岗位列表', other: '不像岗位页'};
+  $('#jlist').innerHTML = PEND.length
+    ? PEND.map(i => `<div class="jrow" data-key="${esc(i.key)}">
+        <div class="t">
+          <input type="checkbox" data-k="${esc(i.key)}"${i.kind === 'other' ? '' : ' checked'}
+            onclick="event.stopPropagation()" style="flex:0 0 auto">
+          <span>${esc(i.title || '(无标题)')}</span></div>
+        <div class="m">${KIND[i.kind] || esc(i.kind || '?')} · ${i.chars || 0} 字 · ${
+          esc((i.at || '').replace('T', ' ').slice(5, 16))}</div>
+      </div>`).join('')
+    : '<div class="empty">队列是空的 —— 开着插件侧边栏浏览 BOSS,岗位页会自动存进来。</div>';
+  $('#jlist').querySelectorAll('.jrow[data-key]').forEach(el => el.onclick = () => showPending(el.dataset.key));
+  $('#jlist').querySelectorAll('input[data-k]').forEach(e => e.onchange = () => {
+    $('#ckall').checked = selKeys().length === PEND.length;
+    updEta();
+  });
+  $('#pbar').style.display = PEND.length ? 'flex' : 'none';
+  updEta();
+}
+
+/* 右侧看待提取的原文 —— 提取前能自己判断这页值不值得花调用 */
+function showPending(key) {
+  const it = PEND.find(x => x.key === key);
+  if (!it) return;
+  const KIND = {detail: '岗位详情', list: '岗位列表', other: '不像岗位页'};
+  $('#jpane').innerHTML = `<div class="jp">
+    <h3>${esc(it.title || '(无标题)')}</h3>
+    <div class="kv">
+      <div><b>${KIND[it.kind] || esc(it.kind)}</b><span>判定</span></div>
+      <div><b class="acc">${it.chars || 0}</b><span>字数</span></div>
+      <div><b>${esc((it.at || '').replace('T', ' ').slice(5, 16))}</b><span>存入时间</span></div>
+    </div>
+    <div class="sec">页面原文(还没清洗 —— 提取后才有结构和特征)</div>
+    <div class="jd" id="ptext">读取中…</div>
+    ${it.url ? `<div class="jfoot"><a class="lk" href="${esc(it.url)}" target="_blank" rel="noreferrer">看原页 ↗</a></div>` : ''}
+  </div>`;
+  fetch('/api/boss/pending/' + encodeURIComponent(key)).then(r => r.json()).then(d => {
+    const box = $('#ptext');
+    if (box) box.textContent = d.text || d.error || '(没有正文)';
+  }).catch(() => { const b = $('#ptext'); if (b) b.textContent = '读不到本地服务'; });
+}
 
 function selKeys() {
-  return [...document.querySelectorAll('#pend input[type=checkbox]:checked')]
+  return [...document.querySelectorAll('#jlist input[type=checkbox]:checked')]
     .map(e => e.dataset.k);
 }
 
@@ -343,28 +422,12 @@ async function updEta() {
 
 function drawPend(items) {
   PEND = items || [];
-  $('#pbar').style.display = PEND.length ? 'flex' : 'none';
-  $('#pend').innerHTML = PEND.length
-    ? '<tr><th></th><th>标题</th><th>判定</th><th>字数</th><th>存入</th></tr>'
-      + PEND.map(i => `<tr>
-          <td class="ck"><input type="checkbox" data-k="${esc(i.key)}"${
-            i.kind === 'other' ? '' : ' checked'}></td>
-          <td>${esc(i.title) || '<span class="dim">(无标题)</span>'}</td>
-          <td><span class="pill${i.kind === 'other' ? '' : ' have'}">${
-              {detail: '岗位详情', list: '岗位列表', other: '不像岗位页'}[i.kind] || esc(i.kind || '?')}</span></td>
-          <td class="n">${i.chars || 0}</td>
-          <td class="t">${esc((i.at || '').replace('T', ' ').slice(5, 16))}</td>
-        </tr>`).join('')
-    : '<tr><td class="empty">队列是空的 —— 开着插件侧边栏浏览 BOSS,岗位页会自动存进来。</td></tr>';
-  document.querySelectorAll('#pend input[type=checkbox]').forEach(e => e.onchange = () => {
-    $('#ckall').checked = selKeys().length === PEND.length;
-    updEta();
-  });
-  updEta();
+  $('#nPend').textContent = PEND.length ? `(${PEND.length})` : '';
+  if (TAB === 'pend') drawPendList();
 }
 
 $('#ckall').onchange = e => {
-  document.querySelectorAll('#pend input[type=checkbox]').forEach(c => c.checked = e.target.checked);
+  document.querySelectorAll('#jlist input[type=checkbox]').forEach(c => c.checked = e.target.checked);
   updEta();
 };
 
@@ -423,8 +486,9 @@ async function load() {
     <div class="fact${ix?.in_sync ? ' on' : ''}"><b>${vec}</b><span>向量${
       ix && !ix.error && !ix.in_sync && !ix.syncing ? `(差 ${ix.pending || 0})` : ''}</span></div>`;
 
+  $('#nJobs').textContent = st.jobs ? `(${st.jobs})` : '';
   // 过滤中不动列表(会把过滤结果冲掉);普通模式按内容指纹,变了才重画
-  if (!FILTERED) {
+  if (TAB === 'jobs' && !FILTERED) {
     const items = jb.items || [];
     const sig = items.map(j => j.job_id + ':' + (j.fit ?? '')).join('|');
     if (sig !== listSig) {
@@ -476,8 +540,9 @@ $('#atest').onclick = async () => {
   const b = $('#atest'); b.disabled = true; b.textContent = '测试中…';
   const d = await (await fetch('/api/boss/llm/test', {method: 'POST'})).json();
   b.disabled = false; b.textContent = '测一下';
-  msg('#amsg', d.ok ? `✓ 通了(${d.model},${d.seconds ?? '?'}s)`
-    : `✗ ${d.error || JSON.stringify(d).slice(0, 140)}`, d.ok ? 'ok' : 'bad');
+  // 后端 probe() 不返回耗时,别读一个不存在的字段(以前显示成「?s」)
+  msg('#amsg', d.ok ? `✓ 通了 · ${esc(d.model)} @ ${esc(d.provider)}`
+    : `✗ ${esc(d.error || d.hint || JSON.stringify(d).slice(0, 140))}`, d.ok ? 'ok' : 'bad');
   load();
 };
 

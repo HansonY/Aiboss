@@ -261,9 +261,12 @@ $('#parse').onclick = async () => {
     if (d.error) { msg('#pmsg', d.error, 'bad'); }
     else {
       const miss = d.missing || [];
-      msg('#pmsg', '提取完成,**已直接生效**(' + esc(d.parsed_by) + ')。'
-        + (miss.length ? ` 有 ${miss.length} 项简历里没读到 —— 下面虚线框里补全即可。` : ' 各项齐了。')
-        + ' <a class="lk" href="/match.html">去看匹配 →</a>', 'ok');
+      // msg() 内部会 esc,所以这里**不能**塞 HTML(以前那个链接渲染成了字面尖括号);
+      // 链接单独挂在后面
+      msg('#pmsg', '提取完成,**已直接生效**(' + d.parsed_by + ')。'
+        + (miss.length ? ` 有 ${miss.length} 项简历里没读到 —— 下面虚线框里补全即可。` : ' 各项齐了。'), 'ok');
+      $('#pmsg').insertAdjacentHTML('beforeend',
+        ' <a class="lk" href="/match.html">去看匹配 →</a>');
     }
   } catch (e) { msg('#pmsg', e.message, 'bad'); }
   b.disabled = false; b.textContent = old;
