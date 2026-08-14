@@ -128,6 +128,7 @@
       <a class="lk" href="/me.html">我的简历</a>
       <a class="lk" href="/match.html">岗位匹配</a>
       <span class="pill" id="ai" style="cursor:pointer" title="点开配置 AI 模型">AI …</span>
+      <button class="btn" id="aibtn" style="padding:5px 11px;font-size:11.5px">AI 设置</button>
     </div>
   </div>
 
@@ -512,6 +513,7 @@ async function load() {
 
 /* ══ AI 设置卡 ══════════════════════════════════════════ */
 let AIP = [];
+$('#aibtn').onclick = () => $('#ai').click();   // 写着字的那个按钮走同一条路
 $('#ai').onclick = async () => {
   const card = $('#aicard');
   if (card.style.display !== 'none') { card.style.display = 'none'; return; }
@@ -563,6 +565,9 @@ $('#atest').onclick = async () => {
     : `✗ ${esc(d.error || d.hint || JSON.stringify(d).slice(0, 140))}`, d.ok ? 'ok' : 'bad');
   load();
 };
+
+// 别的页面用 /#ai 跳过来 —— 直接把设置卡展开,不用再找那个胶囊
+if (location.hash === '#ai') setTimeout(() => $('#ai').click(), 300);
 
 load(); setInterval(load, 5000);
 </script>
