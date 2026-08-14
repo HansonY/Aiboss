@@ -137,7 +137,7 @@
     <div class="box" id="aicard" style="display:none;margin-top:12px;padding:14px 16px">
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
         <div><label class="alab">供应商</label><select id="aprov" class="ainp"></select></div>
-        <div style="flex:1;min-width:200px"><label class="alab">API Key(只回尾四位,永不回明文)</label>
+        <div style="flex:1;min-width:200px"><label class="alab" id="akeylab">API Key</label>
           <input id="akey" class="ainp" type="password" placeholder="粘这家的 key;留空 = 不改" style="width:100%;box-sizing:border-box"></div>
         <div><label class="alab">模型(留空用默认)</label><input id="amodel" class="ainp" placeholder="默认"></div>
         <div><label class="alab">快档(提取/匹配)</label><input id="afast" class="ainp" placeholder="qwen-flash"></div>
@@ -523,8 +523,13 @@ $('#ai').onclick = async () => {
   $('#amodel').value = d.current.model || '';
   $('#afast').value = d.current.fast_model || '';
   $('#akey').value = '';
-  $('#akey').placeholder = d.current.key_set
-    ? `已配(${d.current.key_hint})—— 留空不改,粘新的覆盖` : '粘这家的 API Key';
+  // ⚠️ 输入框永远是空的(只回尾四位,不回明文)—— 所以必须把「怎么改」写在
+  // 看得见的标签上。只写 placeholder 的话,用户看到空框会以为改不了。
+  $('#akeylab').innerHTML = d.current.key_set
+    ? `API Key · 当前 <b style="color:var(--ok)">${esc(d.current.key_hint)}</b>` +
+      ` —— <b>要换就把新 key 粘进来</b>,留空则不动`
+    : `API Key · <b style="color:var(--warn-text)">还没配</b> —— 粘进来即可`;
+  $('#akey').placeholder = d.current.key_set ? '粘新 key 覆盖(留空 = 不改)' : '粘这家的 API Key';
   msg('#amsg', d.status.state === 'ok' ? '' : `当前状态:${d.status.label}`, '');
 };
 $('#aprov').onchange = () => {
@@ -541,7 +546,12 @@ $('#asave').onclick = async () => {
     body: JSON.stringify(body)})).json();
   if (d.error) { msg('#amsg', d.error, 'bad'); return; }
   $('#akey').value = '';
-  msg('#amsg', `已写入 .env(${d.saved.join(' / ')})—— 点「测一下」验证`, 'ok');
+  // 换完把新的尾四位读回来显示 —— 不然用户不知道到底换没换
+  const back = await (await fetch('/api/boss/llm/providers')).json();
+  $('#akeylab').innerHTML = `API Key · 当前 <b style="color:var(--ok)">${
+    esc(back.current.key_hint || '未配')}</b> —— <b>要换就把新 key 粘进来</b>,留空则不动`;
+  msg('#amsg', `已保存(${d.saved.join(' / ')})· key 现在是 ${
+    back.current.key_hint || '未配'} —— 点「测一下」验证`, 'ok');
   load();
 };
 $('#atest').onclick = async () => {
