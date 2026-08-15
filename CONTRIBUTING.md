@@ -30,6 +30,16 @@
 - **状态用多态不用布尔。** 「没有」和「还不知道」必须分得开
   (`jd_state` 三态、门槛四态)。混成一个布尔之后,「该去补数据还是该认命」说不清。
 
+## 版本号
+
+**唯一来源是 `extension/manifest.json` 的 `version`**,仓库 tag 跟着它走
+(manifest 是 `0.5.0` → tag 就是 `v0.5.0`)。
+
+理由:Chrome 要求扩展版本号**只能递增**,改小了装不上。让它当基准,
+两套号就不会打架 —— 反过来让仓库版本当基准的话,迟早要把 manifest 往回改。
+
+发版:先改 manifest 的 version,提交,再 `git tag -a vX.Y.Z && git push origin vX.Y.Z`。
+
 ## 提 Issue
 
 比 PR 更受欢迎的一类:**说清一个判断为什么不对**。
